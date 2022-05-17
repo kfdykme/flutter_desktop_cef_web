@@ -17,7 +17,7 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   String _platformVersion = 'Unknown';
-  GlobalKey _myKey = new GlobalKey();
+  var web = FlutterDesktopCefWeb();
   @override
   void initState() {
     super.initState();
@@ -48,12 +48,6 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    var container = Container(
-      key: _myKey,
-      width: 400,
-      height: 400,
-      color: Colors.amberAccent,
-    );
     return MaterialApp(
       home: Scaffold(
         appBar: AppBar(
@@ -65,23 +59,11 @@ class _MyAppState extends State<MyApp> {
               Text('Running on: $_platformVersion\n'),
               MaterialButton(
                 onPressed: () {
-                  var web = FlutterDesktopCefWeb();
-                  var size =
-                      _myKey.currentContext!.findRenderObject()!.paintBounds;
-                  RenderObject renderObject =
-                      _myKey.currentContext!.findRenderObject()!;
-                  RenderBox? box = renderObject as RenderBox?;
-                  Offset position = box!.localToGlobal(Offset.zero);
-
-                  print(
-                      "position ${position} semanticBounds:${renderObject.semanticBounds.size} paintBounds:${renderObject.paintBounds.size} size:${_myKey.currentContext?.size}");
-
-                  web.loadCef(position.dx.toInt(), position.dy.toInt(),
-                      size.width.toInt(), size.height.toInt());
+                  web.loadCefContainer();
                 },
                 child: Text("Load Cef"),
               ),
-              container
+              web.generateCefContainer(500, 700)
             ],
           ),
         ),
