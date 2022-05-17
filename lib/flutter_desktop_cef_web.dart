@@ -8,6 +8,10 @@ const kMethodChannelName = "flutter_desktop_cef_web";
 class FlutterDesktopCefWeb {
   late MethodChannel mMethodChannel;
 
+  static registerWith() {
+    print("FlutterDesktopCefWeb registerWith");
+  }
+
   FlutterDesktopCefWeb() {
     mMethodChannel = const MethodChannel(kMethodChannelName);
   }
