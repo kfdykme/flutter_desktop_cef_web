@@ -23,7 +23,7 @@ FLUTTER_PLUGIN_EXPORT void FlutterDesktopCefWebPluginRegisterWithRegistrar(
     
 FLUTTER_PLUGIN_EXPORT void FlutterDesktopCefWebPluginCefInit(HINSTANCE instance);
 FLUTTER_PLUGIN_EXPORT void FlutterDesktopCefWebPluginCefLoopMessage();
-
+FLUTTER_PLUGIN_EXPORT void FlutterDesktopCefWebPluginCefOnResize();
 #if defined(__cplusplus)
 }  // extern "C"
 #endif

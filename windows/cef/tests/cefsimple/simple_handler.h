@@ -53,6 +53,10 @@ class SimpleHandler : public CefClient,
   // Returns true if the Chrome runtime is enabled.
   static bool IsChromeRuntimeEnabled();
 
+  CefRefPtr<CefBrowser> GetBrowser() {
+    return browser_;
+  };
+
  private:
   // Platform-specific implementation.
   void PlatformTitleChange(CefRefPtr<CefBrowser> browser,
@@ -66,7 +70,7 @@ class SimpleHandler : public CefClient,
   BrowserList browser_list_;
 
   bool is_closing_;
-
+  CefRefPtr<CefBrowser> browser_;
   // Include the default reference counting implementation.
   IMPLEMENT_REFCOUNTING(SimpleHandler);
 };

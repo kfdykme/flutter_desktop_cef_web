@@ -35,7 +35,8 @@ namespace
   {
   public:
     static void RegisterWithRegistrar(flutter::PluginRegistrarWindows *registrar);
-
+    static std::shared_ptr<flutter::MethodChannel<flutter::EncodableValue>> cef_channle;
+    static std::map<int, CefRefPtr<SimpleHandler>> cef_handlers;
     FlutterDesktopCefWebPlugin();
 
     virtual ~FlutterDesktopCefWebPlugin();
@@ -59,16 +60,21 @@ namespace
     HWND winId_ = 0;
   };
 
-  void OnContextInitialized(HWND winId);
+  std::shared_ptr<flutter::MethodChannel<flutter::EncodableValue>> FlutterDesktopCefWebPlugin::cef_channle = nullptr;
+  std::map<int, CefRefPtr<SimpleHandler>> FlutterDesktopCefWebPlugin::cef_handlers{};
   // static
+
+  void OnContextInitialized(HWND winId, CefRect &rc, int cefid);
+
   void FlutterDesktopCefWebPlugin::RegisterWithRegistrar(
       flutter::PluginRegistrarWindows *registrar)
   {
     auto channel =
-        std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
+        std::make_shared<flutter::MethodChannel<flutter::EncodableValue>>(
             registrar->messenger(), "flutter_desktop_cef_web",
             &flutter::StandardMethodCodec::GetInstance());
 
+    FlutterDesktopCefWebPlugin::cef_channle = channel;
     auto plugin = std::make_unique<FlutterDesktopCefWebPlugin>();
 
     channel->SetMethodCallHandler(
@@ -90,32 +96,32 @@ namespace
     // std::thread cef = std::thread(CefRunMessageLoop);
   }
 
-  void OnContextInitialized(HWND winId, CefRect &rc)
+  void OnContextInitialized(HWND winId, CefRect &rc, int cefid)
   {
     CEF_REQUIRE_UI_THREAD();
 
     CefRefPtr<CefCommandLine> command_line =
         CefCommandLine::GetGlobalCommandLine();
 
+    std::cout << "FlutterDesktopCefWebPlugin::OnContextInitialized 1" << std::endl;
     // Create the browser using the Views framework if "--use-views" is specified
     // via the command-line. Otherwise, create the browser using the native
     // platform framework.
-    const bool use_views = command_line->HasSwitch("use-views");
+    // const bool use_views = command_line->HasSwitch("use-views");
 
+    std::cout << "FlutterDesktopCefWebPlugin::OnContextInitialized 2" << std::endl;
     // SimpleHandler implements browser-level callbacks.
-    CefRefPtr<SimpleHandler> handler(new SimpleHandler(use_views));
-
+    CefRefPtr<SimpleHandler> handler(new SimpleHandler(true));
+    std::cout << "load before 5" << std::endl;
+    FlutterDesktopCefWebPlugin::cef_handlers.insert({cefid, handler});
+    std::cout << "load before 6" << std::endl;
+    std::cout << "FlutterDesktopCefWebPlugin::OnContextInitialized 3" << std::endl;
     // Specify CEF browser settings here.
     CefBrowserSettings browser_settings;
 
-    std::string url;
+    std::string url = "http://www.google.com";
 
-    // Check if a "--url=" value was provided via the command-line. If so, use
-    // that instead of the default URL.
-    url = command_line->GetSwitchValue("url");
-    if (url.empty())
-      url = "http://www.google.com";
-
+    std::cout << "FlutterDesktopCefWebPlugin::OnContextInitialized 4" << std::endl;
     // Information used when creating the native window.
     CefWindowInfo window_info;
 
@@ -126,9 +132,13 @@ namespace
     window_info.SetAsChild(winId, rc);
 #endif
 
+    std::cout << "FlutterDesktopCefWebPlugin::OnContextInitialized 5" << std::endl;
     // Create the first browser window.
-    CefBrowserHost::CreateBrowser(window_info, handler, url, browser_settings,
+    bool is_create_suc = CefBrowserHost::CreateBrowser(window_info, handler, url, browser_settings,
                                   nullptr, nullptr);
+                      
+    std::cout << "FlutterDesktopCefWebPlugin::OnContextInitialized 6, is_create_suc: " << (is_create_suc ? "1" : "0") << std::endl;
+    // std::cout << "FlutterDesktopCefWebPlugin::OnContextInitialized 7" << std::endl;
   }
 
   FlutterDesktopCefWebPlugin::~FlutterDesktopCefWebPlugin() {}
@@ -172,15 +182,33 @@ namespace
     else if (method_call.method_name().compare("loadCef") == 0)
     {
       const auto *arguments = std::get_if<flutter::EncodableMap>(method_call.arguments());
+        std::cout << "load before -2" << std::endl;
       if (arguments)
       {
+        std::cout << "load before -1" << std::endl;
         int x = getInt(arguments, "x");
         int y = getInt(arguments, "y");
         int width = getInt(arguments, "width");
         int height = getInt(arguments, "height");
-
-        CefRect rc(x, y, width, height);
-        OnContextInitialized(winId(), rc);
+        int id = getInt(arguments, "id");
+  
+        std::cout << "load before 0" << std::endl;
+        auto handler_iterator = FlutterDesktopCefWebPlugin::cef_handlers.find(id);
+        std::cout << "load before 1" << std::endl;
+        if (!FlutterDesktopCefWebPlugin::cef_handlers.empty() && handler_iterator != FlutterDesktopCefWebPlugin::cef_handlers.end()) {
+        std::cout << "load before 2" << std::endl;
+          auto handler = handler_iterator->second;
+          auto browser = handler->GetBrowser();
+          if (browser) {
+            HWND wid = browser->GetHost()->GetWindowHandle();
+            
+            MoveWindow(wid, x, y, width, height, TRUE);
+          }
+        } else {
+        std::cout << "load before 3" << std::endl;
+          CefRect rc(x, y, width, height);
+          OnContextInitialized(winId(), rc, id);
+        }
       }
       result->Success(flutter::EncodableValue("ok"));
     }
@@ -257,4 +285,13 @@ void FlutterDesktopCefWebPluginCefInit(HINSTANCE instance)
 void FlutterDesktopCefWebPluginCefLoopMessage()
 {
   CefDoMessageLoopWork();
+}
+
+
+void FlutterDesktopCefWebPluginCefOnResize() {
+  if (FlutterDesktopCefWebPlugin::cef_channle) {
+    FlutterDesktopCefWebPlugin::cef_channle->InvokeMethod("onResize", nullptr);
+  } else {
+    std::cout << "FlutterDesktopCefWebPluginCefOnResize but channel is nullptr" << std::endl;
+  }
 }
