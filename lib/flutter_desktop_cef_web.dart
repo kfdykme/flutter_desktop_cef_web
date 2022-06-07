@@ -10,6 +10,9 @@ const kMethodChannelName = "flutter_desktop_cef_web";
 class FlutterDesktopCefWeb {
   late MethodChannel mMethodChannel;
 
+  static registerWith() {
+    print("FlutterDesktopCefWeb registerWith");
+  }
   final GlobalKey _containerKey = GlobalKey();
 
   static int global_cef_id = 0;

@@ -25,6 +25,10 @@ flutter:
     platforms:
       windows:
         pluginClass: FlutterDesktopCefWebPlugin
+      macos:
+        pluginClass: FlutterDesktopCefWebPlugin
+        fileName: flutter_desktop_cef_web.dart
+        dartPluginClass: FlutterDesktopCefWeb
   # To add assets to your package, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg
