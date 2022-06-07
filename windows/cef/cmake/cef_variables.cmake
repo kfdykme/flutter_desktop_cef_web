@@ -442,6 +442,7 @@ if(OS_WINDOWS)
     WIN32_LEAN_AND_MEAN               # Exclude less common API declarations
     _HAS_EXCEPTIONS=0                 # Disable exceptions
     )
+
   list(APPEND CEF_COMPILER_DEFINES_RELEASE
     NDEBUG _NDEBUG                    # Not a debug build
     )
@@ -523,6 +524,13 @@ if(OS_WINDOWS)
     set(CEF_SANDBOX_LIB_DEBUG "${CEF_BINARY_DIR_DEBUG}/cef_sandbox.lib")
     set(CEF_SANDBOX_LIB_RELEASE "${CEF_BINARY_DIR_RELEASE}/cef_sandbox.lib")
   endif()
+
+  # @Kfdykme
+  list(APPEND CEF_COMPILER_DEFINES_DEBUG
+   
+    _ITERATOR_DEBUG_LEVEL=2 
+    _HAS_ITERATOR_DEBUGGING=1                    # Not a debug build
+    )
 
   # Configure use of ATL.
   option(USE_ATL "Enable or disable use of ATL." ON)
