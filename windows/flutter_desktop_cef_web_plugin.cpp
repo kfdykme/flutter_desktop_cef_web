@@ -58,13 +58,14 @@ namespace
         std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result);
 
     HWND winId_ = 0;
+    std::string default_url{};
   };
 
   std::shared_ptr<flutter::MethodChannel<flutter::EncodableValue>> FlutterDesktopCefWebPlugin::cef_channle = nullptr;
   std::map<int, CefRefPtr<SimpleHandler>> FlutterDesktopCefWebPlugin::cef_handlers{};
   // static
 
-  void OnContextInitialized(HWND winId, CefRect &rc, int cefid);
+  void OnContextInitialized(HWND winId, CefRect &rc, int cefid, std::string default_url = "http://www.google.com");
 
   void FlutterDesktopCefWebPlugin::RegisterWithRegistrar(
       flutter::PluginRegistrarWindows *registrar)
@@ -96,7 +97,7 @@ namespace
     // std::thread cef = std::thread(CefRunMessageLoop);
   }
 
-  void OnContextInitialized(HWND winId, CefRect &rc, int cefid)
+  void OnContextInitialized(HWND winId, CefRect &rc, int cefid, std::string default_url)
   {
     CEF_REQUIRE_UI_THREAD();
 
@@ -119,7 +120,7 @@ namespace
     // Specify CEF browser settings here.
     CefBrowserSettings browser_settings;
 
-    std::string url = "http://www.google.com";
+    std::string url = default_url;
 
     std::cout << "FlutterDesktopCefWebPlugin::OnContextInitialized 4" << std::endl;
     // Information used when creating the native window.
@@ -135,25 +136,52 @@ namespace
     std::cout << "FlutterDesktopCefWebPlugin::OnContextInitialized 5" << std::endl;
     // Create the first browser window.
     bool is_create_suc = CefBrowserHost::CreateBrowser(window_info, handler, url, browser_settings,
-                                  nullptr, nullptr);
-                      
+                                                       nullptr, nullptr);
+
     std::cout << "FlutterDesktopCefWebPlugin::OnContextInitialized 6, is_create_suc: " << (is_create_suc ? "1" : "0") << std::endl;
     // std::cout << "FlutterDesktopCefWebPlugin::OnContextInitialized 7" << std::endl;
   }
 
   FlutterDesktopCefWebPlugin::~FlutterDesktopCefWebPlugin() {}
 
-  int getInt(const flutter::EncodableMap *args, std::string key)
+  std::string getString(const flutter::EncodableMap *args, std::string key)
   {
     auto status_it = args->find(flutter::EncodableValue(key));
-    int res = 0;
+    std::string res = "";
     if (status_it != args->end())
     {
       auto str = std::get<std::string>(status_it->second);
-      std::cout << "get " << key.c_str() << ": " << str.c_str();
-      res = std::stoi(str);
+      std::cout << "get " << key.c_str() << ": " << str.c_str() << std::endl;
+      res = str;
     }
     return res;
+  }
+
+  int getInt(const flutter::EncodableMap *args, std::string key)
+  {
+    int res = 0;
+    auto res_str = getString(args, key);
+    if (!res_str.empty())
+    {
+      res = std::stoi(res_str);
+    }
+    return res;
+  }
+
+
+
+
+  CefRefPtr<SimpleHandler> getCefClientById(int id)
+  {
+
+    auto handler_iterator = FlutterDesktopCefWebPlugin::cef_handlers.find(id);
+    if (!FlutterDesktopCefWebPlugin::cef_handlers.empty() && handler_iterator != FlutterDesktopCefWebPlugin::cef_handlers.end())
+    {
+      std::cout << "load before 2" << std::endl;
+      auto handler = handler_iterator->second;
+      return handler;
+    }
+    return nullptr;
   }
 
   void FlutterDesktopCefWebPlugin::HandleMethodCall(
@@ -161,28 +189,10 @@ namespace
       std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result)
   {
     std::cout << "FlutterDesktopCefWebPlugin::HandleMethodCall" << std::endl;
-    if (method_call.method_name().compare("getPlatformVersion") == 0)
-    {
-      std::ostringstream version_stream;
-      version_stream << "Windows ";
-      if (IsWindows10OrGreater())
-      {
-        version_stream << "10+";
-      }
-      else if (IsWindows8OrGreater())
-      {
-        version_stream << "8";
-      }
-      else if (IsWindows7OrGreater())
-      {
-        version_stream << "7";
-      }
-      result->Success(flutter::EncodableValue(version_stream.str()));
-    }
-    else if (method_call.method_name().compare("loadCef") == 0)
+    if (method_call.method_name().compare("loadCef") == 0)
     {
       const auto *arguments = std::get_if<flutter::EncodableMap>(method_call.arguments());
-        std::cout << "load before -2" << std::endl;
+      std::cout << "load before -2" << std::endl;
       if (arguments)
       {
         std::cout << "load before -1" << std::endl;
@@ -191,26 +201,105 @@ namespace
         int width = getInt(arguments, "width");
         int height = getInt(arguments, "height");
         int id = getInt(arguments, "id");
-  
-        std::cout << "load before 0" << std::endl;
-        auto handler_iterator = FlutterDesktopCefWebPlugin::cef_handlers.find(id);
-        std::cout << "load before 1" << std::endl;
-        if (!FlutterDesktopCefWebPlugin::cef_handlers.empty() && handler_iterator != FlutterDesktopCefWebPlugin::cef_handlers.end()) {
-        std::cout << "load before 2" << std::endl;
-          auto handler = handler_iterator->second;
+
+        auto handler = getCefClientById(id);
+        if (handler != nullptr)
+        {
+          std::cout << "load before 2" << std::endl;
           auto browser = handler->GetBrowser();
-          if (browser) {
+          if (browser)
+          {
             HWND wid = browser->GetHost()->GetWindowHandle();
-            
+
             MoveWindow(wid, x, y, width, height, TRUE);
           }
-        } else {
-        std::cout << "load before 3" << std::endl;
+        }
+        else
+        {
+          std::cout << "load before 3" << std::endl;
           CefRect rc(x, y, width, height);
-          OnContextInitialized(winId(), rc, id);
+          OnContextInitialized(winId(), rc, id, default_url);
         }
       }
       result->Success(flutter::EncodableValue("ok"));
+    }
+    else if (method_call.method_name().compare("loadUrl") == 0)
+    {
+
+      const auto *arguments = std::get_if<flutter::EncodableMap>(method_call.arguments());
+      if (arguments)
+      {
+        std::string url = getString(arguments, "url");
+
+        int id = getInt(arguments, "id");
+        auto handler = getCefClientById(id);
+        if (handler != nullptr)
+        {
+          auto browser = handler->GetBrowser();
+          browser->GetMainFrame()->LoadURL(url);
+          result->Success(flutter::EncodableValue("ok"));
+        } else {
+          result->Success(flutter::EncodableValue("load url error"));
+        }
+      }
+    }
+    else  if (method_call.method_name().compare("setUrl") == 0)
+    {
+
+      const auto *arguments = std::get_if<flutter::EncodableMap>(method_call.arguments());
+      if (arguments)
+      {
+        std::string url = getString(arguments, "url");
+
+        default_url = url;
+      }
+    }
+    else  if (method_call.method_name().compare("executeJs") == 0)
+    {
+
+      const auto *arguments = std::get_if<flutter::EncodableMap>(method_call.arguments());
+      if (arguments)
+      {
+        std::string content = getString(arguments, "content");
+  
+        std::cout << "executeJs:" << content << std::endl;
+        int id = getInt(arguments, "id");
+        auto handler = getCefClientById(id);
+        if (handler != nullptr)
+        {
+          auto browser = handler->GetBrowser();
+          browser->GetMainFrame()->ExecuteJavaScript(
+            CefString(content),
+            browser->GetMainFrame()->GetURL(),
+            0
+          );
+          result->Success(flutter::EncodableValue("ok"));
+        } else {
+          result->Success(flutter::EncodableValue("executeJs error"));
+        } 
+      }
+    }
+    // showDevtools
+    else  if (method_call.method_name().compare("showDevtools") == 0)
+    { 
+      const auto *arguments = std::get_if<flutter::EncodableMap>(method_call.arguments());
+      if (arguments)
+      { 
+
+        int id = getInt(arguments, "id");
+        auto handler = getCefClientById(id);
+        if (handler != nullptr)
+        {
+          auto browser = handler->GetBrowser(); 
+          CefWindowInfo windowInfo;
+          CefBrowserSettings settings;
+          windowInfo.SetAsPopup(NULL, "DevTools");
+          browser->GetHost()->ShowDevTools(windowInfo, handler, settings, CefPoint());
+          result->Success(flutter::EncodableValue("ok"));
+        } else {
+          result->Success(flutter::EncodableValue("showDevtools error"));
+        } 
+      }
     }
     else
     {
@@ -287,11 +376,14 @@ void FlutterDesktopCefWebPluginCefLoopMessage()
   CefDoMessageLoopWork();
 }
 
-
-void FlutterDesktopCefWebPluginCefOnResize() {
-  if (FlutterDesktopCefWebPlugin::cef_channle) {
+void FlutterDesktopCefWebPluginCefOnResize()
+{
+  if (FlutterDesktopCefWebPlugin::cef_channle)
+  {
     FlutterDesktopCefWebPlugin::cef_channle->InvokeMethod("onResize", nullptr);
-  } else {
+  }
+  else
+  {
     std::cout << "FlutterDesktopCefWebPluginCefOnResize but channel is nullptr" << std::endl;
   }
 }

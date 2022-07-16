@@ -13,6 +13,7 @@ class FlutterDesktopCefWeb {
   static registerWith() {
     print("FlutterDesktopCefWeb registerWith");
   }
+
   final GlobalKey _containerKey = GlobalKey();
 
   static int global_cef_id = 0;
@@ -36,6 +37,18 @@ class FlutterDesktopCefWeb {
     });
   }
 
+  setUrl(String url) {
+    invokeMethod("setUrl", <String, Object>{'url': url});
+  }
+
+  executeJs(String content) {
+    invokeMethod("executeJs", <String, Object>{'content': content});
+  }
+
+  showDevtools() {
+    invokeMethod("showDevtools", {});
+  }
+
   Container generateCefContainer(double width, double height) {
     return Container(
       key: _containerKey,
@@ -46,6 +59,7 @@ class FlutterDesktopCefWeb {
   }
 
   loadCefContainer() {
+    if (_containerKey.currentContext == null) return;
     var size = _containerKey.currentContext!.findRenderObject()!.paintBounds;
     RenderObject renderObject =
         _containerKey.currentContext!.findRenderObject()!;
@@ -56,14 +70,23 @@ class FlutterDesktopCefWeb {
         size.width.toInt() - 1, size.height.toInt() - 1);
   }
 
+  loadUrl(String url) {
+    // mMethodChannel.invokeMethod("loadUrl", <String, Object>{'url': url});
+    invokeMethod("loadUrl", <String, Object>{'url': url});
+  }
+
+  invokeMethod(String invoke, dynamic arguments) {
+    arguments["id"] = cefId.toString();
+    mMethodChannel.invokeMethod(invoke, arguments);
+  }
+
   invokeLoadCef(int x, int y, int width, int height) {
     print("loadCef ${x} ${y} ${width} ${height} id:${cefId}\n");
-    mMethodChannel.invokeMethod("loadCef", <String, Object>{
+    invokeMethod("loadCef", <String, Object>{
       'x': x.toString(),
       'y': y.toString(),
       "width": width.toString(),
-      "height": height.toString(),
-      "id": cefId.toString()
+      "height": height.toString()
     });
   }
 }
