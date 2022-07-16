@@ -63,7 +63,7 @@ class _MyAppState extends State<MyApp> {
                 },
                 child: Text("Load Cef"),
               ),
-              web.generateCefContainer(500, 700)
+              web.generateCefContainer(500, 500)
             ],
           ),
         ),

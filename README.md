@@ -37,3 +37,8 @@ const like = 'sample';
 TODO: Tell users more about the package: where to find more information, how to 
 contribute to the package, how to file issues, what response they can expect 
 from the package authors, and more.
+
+
+## NOTE: 
+
+mac: 对cef framework加载路径做了部分改造，这个改造以**KF_CEF**的形式加以标记
