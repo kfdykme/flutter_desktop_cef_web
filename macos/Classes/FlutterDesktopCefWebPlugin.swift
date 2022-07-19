@@ -27,7 +27,7 @@ class FlutterDesktopWebViewController: NSViewController, WKUIDelegate {
   
 
   override func viewDidLoad() {
-        super.viewDidLoad()
+        // super.viewDidLoad()
         print("viewDidLoad")
   }
 
@@ -43,7 +43,7 @@ class FlutterDesktopWebViewController: NSViewController, WKUIDelegate {
   func executeJs(jscode: String, id: Int) {
     var view = views[id]
     if (view != nil) {
-      view?.evaluateJavaScript(javaScript: jscode, completionHandler: nil)
+      view?.evaluateJavaScript(jscode, completionHandler: nil)
     }
   }
 
@@ -74,6 +74,8 @@ public class FlutterDesktopCefWebPlugin: NSObject, FlutterPlugin {
   var controller: FlutterViewController? = nil
 
   static var channel:FlutterMethodChannel? = nil
+
+  var webConfig:[Int:[String:Any]] = [:]
 
   public static func OnResize() {
     print("static OnResize")
@@ -108,6 +110,27 @@ public class FlutterDesktopCefWebPlugin: NSObject, FlutterPlugin {
     }
   }
 
+  public func ensureWebView(id:Int) -> Bool{
+      let mainwindow = NSApplication.shared.mainWindow
+      if (mainwindow != nil) {
+        let argv = webConfig[id]
+        if (argv != nil) {
+
+          let x = getInt(argva: argv, key:"x")
+          var y = getInt(argva: argv, key:"y")
+          let width = getInt(argva: argv, key:"width")
+          let height = getInt(argva: argv, key:"height")
+          let id = getInt(argva: argv, key: "id")
+
+          let titleHeight = 28
+          y = Int(mainwindow!.frame.height) - y - height - titleHeight
+          webViewController?.loadWebView( rect:  CGRect.init(x: x, y: y, width: width, height: height), id: id)
+          return true
+        }
+      }
+      return false
+  }
+
   public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
 
     print("call.method", call.method)
@@ -117,28 +140,21 @@ public class FlutterDesktopCefWebPlugin: NSObject, FlutterPlugin {
       result("macOS " + ProcessInfo.processInfo.operatingSystemVersionString)
     case "loadCef":
       let argv:[String:Any] = call.arguments as! [String: Any]
-
-      let x = getInt(argva: argv, key:"x")
-      var y = getInt(argva: argv, key:"y")
-      let width = getInt(argva: argv, key:"width")
-      let height = getInt(argva: argv, key:"height")
       let id = getInt(argva: argv, key: "id")
-      print(argv)
-      let mainwindow = NSApplication.shared.mainWindow!
-      let titleHeight = 28
-      y = Int(mainwindow.frame.height) - y - height - titleHeight
-      webViewController?.loadWebView( rect:  CGRect.init(x: x, y: y, width: width, height: height), id: id)
-      // parentView?.addSubview(webViewController!.view)
+      webConfig[id] = argv
+      ensureWebView(id:id)
     case "setUrl":
       let argv:[String:Any] = call.arguments as! [String: Any]
       let url = getString(argva:argv, key:"url");
       let id = getInt(argva: argv, key: "id")
+      ensureWebView(id:id)
       webViewController?.loadUrl(url: url, id: id)
     case "executeJs":
 
       let argv:[String:Any] = call.arguments as! [String: Any]
       let url = getString(argva:argv, key:"content");
       let id = getInt(argva: argv, key: "id")
+      ensureWebView(id:id)
       webViewController?.executeJs(jscode: url, id: id)
     default:
       result(FlutterMethodNotImplemented)
