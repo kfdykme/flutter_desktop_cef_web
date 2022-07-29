@@ -2,13 +2,24 @@ import Cocoa
 import FlutterMacOS
 import WebKit
 
-class FlutterDesktopWebViewController: NSViewController, WKUIDelegate {
+class FlutterDesktopWebViewController: NSViewController, WKUIDelegate,  WKScriptMessageHandler {
   var webView: WKWebView!
 
   var views: [Int: WKWebView] = [:]
+  var penddingRequests: [Int: URLRequest] = [:]
+  var userContentController: WKUserContentController?
+
+  var window: NSWindow? = nil
 
   func createWebView(rect:CGRect?, id: Int) -> WKWebView? {
     let webConfiguration = WKWebViewConfiguration()
+
+    if (userContentController == nil) {
+      userContentController = WKUserContentController()
+      userContentController
+    }
+    webConfiguration.userContentController = userContentController!
+    webConfiguration.userContentController.add(self, name: "ipcRender")
     if (rect != nil) {
       let mainwindow = NSApplication.shared.mainWindow!
       webView = WKWebView(frame: rect!, configuration: webConfiguration)
@@ -20,6 +31,28 @@ class FlutterDesktopWebViewController: NSViewController, WKUIDelegate {
       return nil
     }
   }
+  func userContentController(
+      _ userContentController: WKUserContentController,
+      didReceive message: WKScriptMessage
+  ) {
+    // print("userContentController receive", message.body)
+    FlutterDesktopCefWebPlugin.channel?.invokeMethod("ipcRender", arguments: message.body)
+  }
+
+  func getTitleHeight() -> Int {
+    if (self.window != nil) {
+
+      print(self.window!.styleMask)
+    } else {
+      print("getTitleHeight without window")
+    }
+    if (self.window?.styleMask.rawValue == 16399) {
+      return 0
+    } else {
+      return 28
+    }
+  }
+
 
   override func loadView() {
 
@@ -38,8 +71,11 @@ class FlutterDesktopWebViewController: NSViewController, WKUIDelegate {
     var view = views[id]
     if (view != nil) {
       view?.load(myRequest)
+    } else {
+      penddingRequests[id] =  myRequest
     }
   }
+ 
   func executeJs(jscode: String, id: Int) {
     var view = views[id]
     if (view != nil) {
@@ -55,14 +91,15 @@ class FlutterDesktopWebViewController: NSViewController, WKUIDelegate {
           view = createWebView(rect: rect, id:id)
           if (view != nil) {
             mainwindow.contentView?.addSubview(view!)
+            var req = penddingRequests[id]
+            if (req != nil) {
+              view!.load(req!)
+              penddingRequests.removeValue(forKey: id)
+            }
           }
         } else {
-          // mainwindow.contentView?.willRemoveSubview(webView)
           view!.frame = rect
-
         }
-        // print("loadWebView", url)
-        // view!.load(myRequest)
   }
 }
 
@@ -71,12 +108,14 @@ public class FlutterDesktopCefWebPlugin: NSObject, FlutterPlugin {
   var webViewController: FlutterDesktopWebViewController? = nil
   var parentView: NSView? = nil
 
+  public static var window: NSWindow? = nil
+
   var controller: FlutterViewController? = nil
 
   static var channel:FlutterMethodChannel? = nil
 
   var webConfig:[Int:[String:Any]] = [:]
-
+  
   public static func OnResize() {
     print("static OnResize")
     FlutterDesktopCefWebPlugin.channel?.invokeMethod("onResize", arguments: nil)
@@ -88,6 +127,7 @@ public class FlutterDesktopCefWebPlugin: NSObject, FlutterPlugin {
     registrar.addMethodCallDelegate(instance, channel: channel)
 
     instance.webViewController = FlutterDesktopWebViewController()
+    instance.webViewController!.window = FlutterDesktopCefWebPlugin.window
     FlutterDesktopCefWebPlugin.channel = channel
   }
 
@@ -113,16 +153,18 @@ public class FlutterDesktopCefWebPlugin: NSObject, FlutterPlugin {
   public func ensureWebView(id:Int) -> Bool{
       let mainwindow = NSApplication.shared.mainWindow
       if (mainwindow != nil) {
-        let argv = webConfig[id]
+        let argv = webConfig[id] 
         if (argv != nil) {
 
-          let x = getInt(argva: argv, key:"x")
-          var y = getInt(argva: argv, key:"y")
-          let width = getInt(argva: argv, key:"width")
-          let height = getInt(argva: argv, key:"height")
-          let id = getInt(argva: argv, key: "id")
+          let x = getInt(argva: argv as Any, key:"x")
+          var y = getInt(argva: argv as Any, key:"y")
+          let width = getInt(argva: argv as Any, key:"width") + 1
+          let height = getInt(argva: argv as Any, key:"height") + 1
+          let id = getInt(argva: argv as Any, key: "id")
 
-          let titleHeight = 28
+          let titleHeight = webViewController != nil ? webViewController!.getTitleHeight() : 28
+          print("ensureWebView with titleHeight :")
+          print(titleHeight)
           y = Int(mainwindow!.frame.height) - y - height - titleHeight
           webViewController?.loadWebView( rect:  CGRect.init(x: x, y: y, width: width, height: height), id: id)
           return true
@@ -132,8 +174,6 @@ public class FlutterDesktopCefWebPlugin: NSObject, FlutterPlugin {
   }
 
   public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
-
-    print("call.method", call.method)
     
     switch call.method {
     case "getPlatformVersion":
@@ -147,6 +187,7 @@ public class FlutterDesktopCefWebPlugin: NSObject, FlutterPlugin {
       let argv:[String:Any] = call.arguments as! [String: Any]
       let url = getString(argva:argv, key:"url");
       let id = getInt(argva: argv, key: "id")
+      print(call.method + ":" + url)
       ensureWebView(id:id)
       webViewController?.loadUrl(url: url, id: id)
     case "executeJs":

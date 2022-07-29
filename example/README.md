@@ -4,13 +4,39 @@ Demonstrates how to use the flutter_desktop_cef_web plugin.
 
 ## Getting Started
 
-This project is a starting point for a Flutter application.
+触发resize事件跟随
 
-A few resources to get you started if this is your first Flutter project:
+``` swift
 
-- [Lab: Write your first Flutter app](https://flutter.dev/docs/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://flutter.dev/docs/cookbook)
+import Cocoa
+import FlutterMacOS
+import flutter_desktop_cef_web
 
-For help getting started with Flutter, view our
-[online documentation](https://flutter.dev/docs), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+class MainFlutterWindow: NSWindow, NSWindowDelegate {
+  override func awakeFromNib() {
+    let flutterViewController = FlutterViewController.init()
+    let windowFrame = self.frame
+    self.contentViewController = flutterViewController
+    self.setFrame(windowFrame, display: true)
+
+    RegisterGeneratedPlugins(registry: flutterViewController)
+
+    super.awakeFromNib()
+  }
+
+  public  func windowWillResize(
+    _ sender: NSWindow,
+    to frameSize: NSSize
+) -> NSSize {
+  // print("windowWillResize")
+    FlutterDesktopCefWebPlugin.OnResize()
+  return frameSize
+}
+  func windowDidResize(_ notification: Notification) {
+    print(notification)
+    
+    FlutterDesktopCefWebPlugin.OnResize()
+  }
+}
+
+```

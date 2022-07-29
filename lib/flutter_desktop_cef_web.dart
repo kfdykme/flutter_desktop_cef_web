@@ -1,10 +1,13 @@
 library flutter_desktop_cef_web;
 
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 const kMethodChannelName = "flutter_desktop_cef_web";
+
 
 /// A Calculator.
 class FlutterDesktopCefWeb {
@@ -33,8 +36,15 @@ class FlutterDesktopCefWeb {
         print("${kMethodChannelName} onResize");
         loadCefContainer();
       }
+      if (call.method == "ipcRender") {
+        handleIpcRenderMessage(call.arguments);
+      }
       return result;
     });
+  }
+
+  bool handleIpcRenderMessage(dynamic arguments) {
+    return false;
   }
 
   setUrl(String url) {
@@ -49,13 +59,20 @@ class FlutterDesktopCefWeb {
     invokeMethod("showDevtools", {});
   }
 
-  Container generateCefContainer(double width, double height) {
-    return Container(
+  InkWell generateCefContainer(double width, double height) {
+
+    var container =  Container(
       key: _containerKey,
       width: width,
       height: height == -1 ? null : height,
       color: Colors.amberAccent,
     );
+
+    return InkWell(
+      child: container,
+      onTap: () { 
+        loadCefContainer();
+      });
   }
 
   loadCefContainer() {
@@ -88,5 +105,31 @@ class FlutterDesktopCefWeb {
       "width": width.toString(),
       "height": height.toString()
     });
+  }
+}
+
+
+class FlutterDesktopEditor extends FlutterDesktopCefWeb {
+
+
+  int callbackIdCount = 0;
+  Map<int,Completer<String>> callbacks = new Map();
+
+  bool handleIpcRenderMessage(dynamic arguments) {
+    print("handleIpcRenderMessage ${arguments}");
+    int id = double.parse(arguments['callbackid'].toString()).toInt();
+    if (callbacks[id] != null) {
+      callbacks[id]!.complete(arguments['content'].toString());
+    }
+    return false;
+  }
+
+  Future<String> getEditorContent() {
+    Completer<String> completer = new Completer();
+    // window.webkit.messageHandlers.ipcRender.postMessage({'a':1})
+    int callbackId  =  callbackIdCount++;
+    callbacks[callbackId] = completer;
+    executeJs("window.webkit.messageHandlers.ipcRender.postMessage({'content': window.denkGetKey('editor').getValue(), 'callbackid': ${callbackId}}) ");
+    return completer.future;
   }
 }
