@@ -8,7 +8,6 @@ import 'package:flutter/services.dart';
 
 const kMethodChannelName = "flutter_desktop_cef_web";
 
-
 /// A Calculator.
 class FlutterDesktopCefWeb {
   late MethodChannel mMethodChannel;
@@ -59,20 +58,24 @@ class FlutterDesktopCefWeb {
     invokeMethod("showDevtools", {});
   }
 
-  InkWell generateCefContainer(double width, double height) {
+  GlobalKey key() {
+    return _containerKey;
+  }
 
-    var container =  Container(
-      key: _containerKey,
-      width: width,
-      height: height == -1 ? null : height,
-      color: Colors.amberAccent,
-    );
+  InkWell generateCefContainer(double width, double height) {
+    var container = Expanded(
+        key: _containerKey,
+        child: Container(
+          // width: width,
+          // height: height == -1 ? null : height,
+          // color: Colors.amberAccent,
+        ));
 
     return InkWell(
-      child: container,
-      onTap: () { 
-        loadCefContainer();
-      });
+        child: container,
+        onTap: () {
+          loadCefContainer();
+        });
   }
 
   loadCefContainer() {
@@ -81,10 +84,15 @@ class FlutterDesktopCefWeb {
     RenderObject renderObject =
         _containerKey.currentContext!.findRenderObject()!;
     RenderBox? box = renderObject as RenderBox?;
-    Offset position = box!.localToGlobal(Offset.zero);
-
-    invokeLoadCef(position.dx.toInt() + 1, position.dy.toInt() - 1,
-        size.width.toInt() - 1, size.height.toInt() - 1);
+    if (box != null) {
+      Offset position = box.localToGlobal(Offset.zero);
+      // if (size.width.toInt() - 1)
+      invokeLoadCef(
+          position.dx.toInt() + 1,
+          position.dy.toInt() - 1,
+          size.width.toInt() - 1 > 0 ? size.width.toInt() - 1 : 1,
+          size.height.toInt() - 1);
+    }
   }
 
   loadUrl(String url) {
@@ -108,28 +116,47 @@ class FlutterDesktopCefWeb {
   }
 }
 
-
 class FlutterDesktopEditor extends FlutterDesktopCefWeb {
-
-
   int callbackIdCount = 0;
-  Map<int,Completer<String>> callbacks = new Map();
+  Map<int, Completer<String>> callbacks = new Map();
+
+  Map<String, Function> invokeFunctions = new Map();
 
   bool handleIpcRenderMessage(dynamic arguments) {
-    print("handleIpcRenderMessage ${arguments}");
-    int id = double.parse(arguments['callbackid'].toString()).toInt();
-    if (callbacks[id] != null) {
-      callbacks[id]!.complete(arguments['content'].toString());
+    print("handleIpcRenderMessage ${arguments} ${arguments['callbackid']}");
+    if (arguments['callbackid'] != null) {
+      int id = double.parse(arguments['callbackid'].toString()).toInt();
+      if (callbacks[id] != null) {
+        callbacks[id]!.complete(arguments['content'].toString());
+      } else {
+        print("handleIpcRenderMessage without callback");
+      }
+    } else {
+      String name =
+          arguments['name'] != null ? arguments['name'].toString() : '';
+
+      Function? func = invokeFunctions[name];
+      if (func != null) {
+        func(arguments['data']);
+      } else {
+
+        print("handleIpcRenderMessage without function");
+      }
     }
     return false;
   }
 
-  Future<String> getEditorContent() {
+  void registerFunction(String name, Function func) {
+    invokeFunctions[name] = func;
+  }
+
+  Future<String> getEditorContent(String currentFilePath ) {
     Completer<String> completer = new Completer();
     // window.webkit.messageHandlers.ipcRender.postMessage({'a':1})
-    int callbackId  =  callbackIdCount++;
+    int callbackId = callbackIdCount++;
     callbacks[callbackId] = completer;
-    executeJs("window.webkit.messageHandlers.ipcRender.postMessage({'content': window.denkGetKey('editor').getValue(), 'callbackid': ${callbackId}}) ");
+    executeJs(
+        "window.webkit.messageHandlers.ipcRender.postMessage({'content': window.denkGetKey('editor${currentFilePath}' ).getValue(), 'callbackid': ${callbackId}}) ");
     return completer.future;
   }
 }
