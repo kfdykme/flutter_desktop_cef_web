@@ -101,6 +101,23 @@ class FlutterDesktopWebViewController: NSViewController, WKUIDelegate,  WKScript
           view!.frame = rect
         }
   }
+
+  func hideWebView(id: Int) {
+    // 
+    let mainwindow = NSApplication.shared.mainWindow!
+    var view = views[id]
+    if (view != nil && mainwindow != nil) {
+      view?.removeFromSuperview();
+    }
+  }
+
+  func showWebView(id: Int) {
+    let mainwindow = NSApplication.shared.mainWindow!
+    var view = views[id]
+    if (view != nil && mainwindow != nil) {
+      mainwindow.contentView?.addSubview(view!)
+    }
+  }
 }
 
 public class FlutterDesktopCefWebPlugin: NSObject, FlutterPlugin {
@@ -196,7 +213,18 @@ public class FlutterDesktopCefWebPlugin: NSObject, FlutterPlugin {
       let url = getString(argva:argv, key:"content");
       let id = getInt(argva: argv, key: "id")
       ensureWebView(id:id)
+      webViewController?.showWebView(id: id)
       webViewController?.executeJs(jscode: url, id: id)
+    case "hide" :
+      let argv:[String:Any] = call.arguments as! [String: Any]
+      let id = getInt(argva: argv, key: "id")
+      webViewController?.hideWebView(id: id)
+      
+    case "show" :
+      let argv:[String:Any] = call.arguments as! [String: Any]
+      let id = getInt(argva: argv, key: "id")
+      webViewController?.showWebView(id: id)
+
     default:
       result(FlutterMethodNotImplemented)
     }

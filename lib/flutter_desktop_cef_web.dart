@@ -20,6 +20,8 @@ class FlutterDesktopCefWeb {
 
   static int global_cef_id = 0;
 
+  static List<FlutterDesktopCefWeb> allWebViews = [];
+
   int cefId = FlutterDesktopCefWeb.global_cef_id++;
 
   FlutterDesktopCefWeb() {
@@ -40,6 +42,8 @@ class FlutterDesktopCefWeb {
       }
       return result;
     });
+
+    FlutterDesktopCefWeb.allWebViews.add(this);
   }
 
   bool handleIpcRenderMessage(dynamic arguments) {
@@ -114,6 +118,14 @@ class FlutterDesktopCefWeb {
       "height": height.toString()
     });
   }
+
+  void show() {
+    invokeMethod("show", {});
+  }
+
+  void hide() {
+    invokeMethod("hide", {});
+  }
 }
 
 class FlutterDesktopEditor extends FlutterDesktopCefWeb {
@@ -145,6 +157,7 @@ class FlutterDesktopEditor extends FlutterDesktopCefWeb {
     }
     return false;
   }
+
 
   void registerFunction(String name, Function func) {
     invokeFunctions[name] = func;
