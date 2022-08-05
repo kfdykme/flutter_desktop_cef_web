@@ -104,18 +104,18 @@ class FlutterDesktopWebViewController: NSViewController, WKUIDelegate,  WKScript
 
   func hideWebView(id: Int) {
     // 
-    let mainwindow = NSApplication.shared.mainWindow!
+    let mainwindow = NSApplication.shared.mainWindow
     var view = views[id]
-    if (view != nil && mainwindow != nil) {
+    if (view != nil) {
       view?.removeFromSuperview();
     }
   }
 
   func showWebView(id: Int) {
-    let mainwindow = NSApplication.shared.mainWindow!
+    let mainwindow = NSApplication.shared.mainWindow
     var view = views[id]
     if (view != nil && mainwindow != nil) {
-      mainwindow.contentView?.addSubview(view!)
+      mainwindow?.contentView?.addSubview(view!)
     }
   }
 }

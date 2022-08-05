@@ -163,13 +163,19 @@ class FlutterDesktopEditor extends FlutterDesktopCefWeb {
     invokeFunctions[name] = func;
   }
 
-  Future<String> getEditorContent(String currentFilePath ) {
+  Future<String> getEditorContent(String currentFilePath , ) {
     Completer<String> completer = new Completer();
     // window.webkit.messageHandlers.ipcRender.postMessage({'a':1})
     int callbackId = callbackIdCount++;
     callbacks[callbackId] = completer;
+    Future.delayed(Duration(milliseconds: 1000))
+      .then((value) => {
+        if (!completer.isCompleted) {
+          completer.completeError("getEditorContent timeout")
+        }
+      });
     executeJs(
-        "window.webkit.messageHandlers.ipcRender.postMessage({'content': window.denkGetKey('editor${currentFilePath}' ).getValue(), 'callbackid': ${callbackId}}) ");
+        "window.webkit.messageHandlers.ipcRender.postMessage({'content': window.denkGetKey('getEditorByFilePath')('${currentFilePath}').getValue(), 'callbackid': ${callbackId}}) ");
     return completer.future;
   }
 }
