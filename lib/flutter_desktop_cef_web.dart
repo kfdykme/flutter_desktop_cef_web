@@ -11,7 +11,7 @@ const kMethodChannelName = "flutter_desktop_cef_web";
 /// A Calculator.
 class FlutterDesktopCefWeb {
   late MethodChannel mMethodChannel;
-
+  bool hasGeneratedContainer = false;
   static registerWith() {
     print("FlutterDesktopCefWeb registerWith");
   }
@@ -55,6 +55,7 @@ class FlutterDesktopCefWeb {
   }
 
   executeJs(String content) {
+    
     invokeMethod("executeJs", <String, Object>{'content': content});
   }
 
@@ -66,24 +67,23 @@ class FlutterDesktopCefWeb {
     return _containerKey;
   }
 
-  InkWell generateCefContainer(double width, double height) {
+  Widget generateCefContainer(double width, double height) {
     var container = Expanded(
         key: _containerKey,
         child: Container(
-          // width: width,
-          // height: height == -1 ? null : height,
-          // color: Colors.amberAccent,
+          width: null,
+          height: height == -1 ? null : height,
         ));
-
-    return InkWell(
-        child: container,
-        onTap: () {
-          loadCefContainer();
-        });
+    hasGeneratedContainer = true;
+    return container;
   }
 
   loadCefContainer() {
-    if (_containerKey.currentContext == null) return;
+
+    if (_containerKey.currentContext == null) {
+      print("loadCefContainer cancel ${hasGeneratedContainer}");
+      return ;
+    };
     var size = _containerKey.currentContext!.findRenderObject()!.paintBounds;
     RenderObject renderObject =
         _containerKey.currentContext!.findRenderObject()!;
@@ -96,6 +96,8 @@ class FlutterDesktopCefWeb {
           position.dy.toInt() - 1,
           size.width.toInt() - 1 > 0 ? size.width.toInt() - 1 : 1,
           size.height.toInt() - 1);
+    } else {
+      print("loadCefContainer error box is null");
     }
   }
 
@@ -111,6 +113,12 @@ class FlutterDesktopCefWeb {
 
   invokeLoadCef(int x, int y, int width, int height) {
     print("loadCef ${x} ${y} ${width} ${height} id:${cefId}\n");
+    // invokeMethod("loadCef", <String, Object>{
+    //   'x':'0',
+    //   'y': '0',
+    //   "width": '400',
+    //   "height": '400',
+    // });
     invokeMethod("loadCef", <String, Object>{
       'x': x.toString(),
       'y': y.toString(),
@@ -118,7 +126,6 @@ class FlutterDesktopCefWeb {
       "height": height.toString()
     });
   }
-
   void show() {
     invokeMethod("show", {});
   }
@@ -133,6 +140,12 @@ class FlutterDesktopEditor extends FlutterDesktopCefWeb {
   Map<int, Completer<String>> callbacks = new Map();
 
   Map<String, Function> invokeFunctions = new Map();
+
+
+  // for try insert first
+  bool needInsertFirst  = false;
+  String needInsertContent = "";
+  String needInsertPath = "";
 
   bool handleIpcRenderMessage(dynamic arguments) {
     print("handleIpcRenderMessage ${arguments} ${arguments['callbackid']}");
@@ -156,6 +169,24 @@ class FlutterDesktopEditor extends FlutterDesktopCefWeb {
       }
     }
     return false;
+  }
+
+  void toggleInsertFirst() {
+    needInsertFirst = !needInsertFirst;
+  }
+
+
+  void tryInsertFirst() {
+    print("tryInsertFirst ${needInsertFirst} ${needInsertContent} ${needInsertPath}");
+    if (needInsertFirst) {
+      insertByContentNId(needInsertContent, needInsertPath);
+      toggleInsertFirst();
+    }
+  }
+
+  void insertByContentNId(String content, String editorId) {
+    executeJs(
+        'window.denkGetKey("insertIntoEditor")(decodeURIComponent(\"${Uri.encodeComponent(content)}\"), "${editorId}")');
   }
 
 
