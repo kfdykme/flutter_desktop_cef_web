@@ -254,6 +254,50 @@ namespace
         default_url = url;
       }
     }
+    else if (method_call.method_name().compare("hide") == 0)
+    {
+       const auto *arguments = std::get_if<flutter::EncodableMap>(method_call.arguments());
+      if (arguments)
+      {
+        std::string url = getString(arguments, "url");
+
+        int id = getInt(arguments, "id");
+        auto handler = getCefClientById(id);
+        if (handler != nullptr)
+        {
+          auto browser = handler->GetBrowser();
+          if (browser)
+          {
+            HWND wid = browser->GetHost()->GetWindowHandle();
+
+            // MoveWindow(wid, 0, 0, 0, height, TRUE);
+            ShowWindow(wid, SW_HIDE);
+          }
+        }
+      }
+    }
+    else if (method_call.method_name().compare("show") == 0)
+    {
+       const auto *arguments = std::get_if<flutter::EncodableMap>(method_call.arguments());
+      if (arguments)
+      {
+        std::string url = getString(arguments, "url");
+
+        int id = getInt(arguments, "id");
+        auto handler = getCefClientById(id);
+        if (handler != nullptr)
+        {
+          auto browser = handler->GetBrowser();
+          if (browser)
+          {
+            HWND wid = browser->GetHost()->GetWindowHandle();
+
+            // MoveWindow(wid, 0, 0, 0, height, TRUE);
+            ShowWindow(wid, SW_SHOW);
+          }
+        }
+      }
+    }
     else  if (method_call.method_name().compare("executeJs") == 0)
     {
 
