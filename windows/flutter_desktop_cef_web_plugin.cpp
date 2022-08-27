@@ -22,12 +22,17 @@
 
 #include "core/simple_app.h"
 #include "core/simple_handler.h"
+#include "core/client_app.h"
+#include "core/renderer/client_app_renderer.h"
 
 #include <map>
 #include <memory>
 #include <sstream>
 
 #include <iostream>
+#include <fstream>
+
+
 namespace
 {
 
@@ -361,6 +366,29 @@ void FlutterDesktopCefWebPluginRegisterWithRegistrar(
           ->GetRegistrar<flutter::PluginRegistrarWindows>(registrar));
 }
 
+void FlutterDesktopCefWebPluginCefMain(HINSTANCE instance) { 
+  CefEnableHighDPISupport();
+
+  CefMainArgs main_args(instance);
+
+
+#if defined(CEF_USE_SANDBOX)
+
+  void* sandbox_info = nullptr;
+  // Manage the life span of the sandbox information object. This is necessary
+  // for sandbox support on Windows. See cef_sandbox_win.h for complete details.
+  CefScopedSandboxInfo scoped_sandbox;
+  sandbox_info = scoped_sandbox.sandbox_info();
+#endif
+
+  // Parse command-line arguments.
+  CefRefPtr<CefCommandLine> command_line = CefCommandLine::CreateCommandLine();
+  command_line->InitFromString(::GetCommandLineW());
+
+  // Create a ClientApp of the correct type.
+ 
+}
+
 void FlutterDesktopCefWebPluginCefInit(HINSTANCE instance)
 {
   std::cout << "FlutterDesktopCefWebPluginCefInit" << std::endl;
@@ -380,19 +408,28 @@ void FlutterDesktopCefWebPluginCefInit(HINSTANCE instance)
   // Provide CEF with command-line arguments.
   CefMainArgs main_args(instance);
 
-  // CEF applications have multiple sub-processes (render, GPU, etc) that share
-  // the same executable. This function checks the command-line and, if this is
-  // a sub-process, executes the appropriate logic.
-  int exit_code = CefExecuteProcess(main_args, nullptr, sandbox_info);
-  if (exit_code >= 0)
-  {
-    // The sub-process has completed so return here.
-    return;
-  }
 
   // Parse command-line arguments for use in this method.
   CefRefPtr<CefCommandLine> command_line = CefCommandLine::CreateCommandLine();
   command_line->InitFromString(::GetCommandLineW());
+  // ClientApp::ProcessType process_type = ClientApp::GetProcessType(command_line);
+  
+  client::ClientApp::ProcessType process_type = client::ClientApp::GetProcessType(command_line);
+  // if (process_type == client::ClientApp::BrowserProcess)
+  //   app = new ClientAppBrowser();
+  // else 
+  if (process_type == client::ClientApp::RendererProcess){
+    CefRefPtr<CefApp> sub_process_app;
+    sub_process_app = new client::ClientAppRenderer(); 
+
+    // Execute the secondary process, if any.
+    int exit_code = CefExecuteProcess(main_args, sub_process_app, sandbox_info);
+    if (exit_code>0) {
+      return;
+    }
+  } else {
+     CefExecuteProcess(main_args, nullptr, sandbox_info);
+  }
 
   // Specify CEF global settings here.
   CefSettings settings;
@@ -402,6 +439,7 @@ void FlutterDesktopCefWebPluginCefInit(HINSTANCE instance)
     // Enable experimental Chrome runtime. See issue #2969 for details.
     settings.chrome_runtime = true;
   }
+  settings.remote_debugging_port = 10289;
 
 #if !defined(CEF_USE_SANDBOX)
   settings.no_sandbox = true;
@@ -429,5 +467,18 @@ void FlutterDesktopCefWebPluginCefOnResize()
   else
   {
     std::cout << "FlutterDesktopCefWebPluginCefOnResize but channel is nullptr" << std::endl;
+  }
+}
+
+void FlutterDesktopCefWebPluginCefIpcRender(const char* message)
+{
+  
+  if (FlutterDesktopCefWebPlugin::cef_channle)
+  {
+    FlutterDesktopCefWebPlugin::cef_channle->InvokeMethod("ipcRender", std::make_unique<flutter::EncodableValue>( flutter::EncodableValue(std::string(message))));
+  }
+  else
+  {
+    std::cout << "FlutterDesktopCefWebPluginCefIpcRender but channel is nullptr" << std::endl;
   }
 }

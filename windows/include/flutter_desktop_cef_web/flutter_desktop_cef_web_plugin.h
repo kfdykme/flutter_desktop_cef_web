@@ -24,6 +24,7 @@ FLUTTER_PLUGIN_EXPORT void FlutterDesktopCefWebPluginRegisterWithRegistrar(
 FLUTTER_PLUGIN_EXPORT void FlutterDesktopCefWebPluginCefInit(HINSTANCE instance);
 FLUTTER_PLUGIN_EXPORT void FlutterDesktopCefWebPluginCefLoopMessage();
 FLUTTER_PLUGIN_EXPORT void FlutterDesktopCefWebPluginCefOnResize();
+FLUTTER_PLUGIN_EXPORT void FlutterDesktopCefWebPluginCefIpcRender(const char* message);
 #if defined(__cplusplus)
 }  // extern "C"
 #endif

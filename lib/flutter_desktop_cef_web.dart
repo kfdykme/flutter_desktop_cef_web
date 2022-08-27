@@ -1,6 +1,7 @@
 library flutter_desktop_cef_web;
 
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -38,6 +39,7 @@ class FlutterDesktopCefWeb {
         loadCefContainer();
       }
       if (call.method == "ipcRender") {
+        print("${kMethodChannelName} ipcRender ${call}");
         handleIpcRenderMessage(call.arguments);
       }
       return result;
@@ -55,7 +57,6 @@ class FlutterDesktopCefWeb {
   }
 
   executeJs(String content) {
-    
     invokeMethod("executeJs", <String, Object>{'content': content});
   }
 
@@ -79,11 +80,11 @@ class FlutterDesktopCefWeb {
   }
 
   loadCefContainer() {
-
     if (_containerKey.currentContext == null) {
       print("loadCefContainer cancel ${hasGeneratedContainer}");
-      return ;
-    };
+      return;
+    }
+    ;
     var size = _containerKey.currentContext!.findRenderObject()!.paintBounds;
     RenderObject renderObject =
         _containerKey.currentContext!.findRenderObject()!;
@@ -126,6 +127,7 @@ class FlutterDesktopCefWeb {
       "height": height.toString()
     });
   }
+
   void show() {
     invokeMethod("show", {});
   }
@@ -141,13 +143,16 @@ class FlutterDesktopEditor extends FlutterDesktopCefWeb {
 
   Map<String, Function> invokeFunctions = new Map();
 
-
   // for try insert first
-  bool needInsertFirst  = false;
+  bool needInsertFirst = false;
   String needInsertContent = "";
   String needInsertPath = "";
 
   bool handleIpcRenderMessage(dynamic arguments) {
+    if (arguments.runtimeType == String) {
+      print("handleIpcRenderMessage as string: ${arguments}");
+      arguments = jsonDecode(arguments);
+    }
     print("handleIpcRenderMessage ${arguments} ${arguments['callbackid']}");
     if (arguments['callbackid'] != null) {
       int id = double.parse(arguments['callbackid'].toString()).toInt();
@@ -164,7 +169,6 @@ class FlutterDesktopEditor extends FlutterDesktopCefWeb {
       if (func != null) {
         func(arguments['data']);
       } else {
-
         print("handleIpcRenderMessage without function");
       }
     }
@@ -175,9 +179,9 @@ class FlutterDesktopEditor extends FlutterDesktopCefWeb {
     needInsertFirst = !needInsertFirst;
   }
 
-
   void tryInsertFirst() {
-    print("tryInsertFirst ${needInsertFirst} ${needInsertContent} ${needInsertPath}");
+    print(
+        "tryInsertFirst ${needInsertFirst} ${needInsertContent} ${needInsertPath}");
     if (needInsertFirst) {
       insertByContentNId(needInsertContent, needInsertPath);
       toggleInsertFirst();
@@ -189,22 +193,21 @@ class FlutterDesktopEditor extends FlutterDesktopCefWeb {
         'window.denkGetKey("insertIntoEditor")(decodeURIComponent(\"${Uri.encodeComponent(content)}\"), "${editorId}")');
   }
 
-
   void registerFunction(String name, Function func) {
     invokeFunctions[name] = func;
   }
 
-  Future<String> getEditorContent(String currentFilePath , ) {
+  Future<String> getEditorContent(
+    String currentFilePath,
+  ) {
     Completer<String> completer = new Completer();
     // window.webkit.messageHandlers.ipcRender.postMessage({'a':1})
     int callbackId = callbackIdCount++;
     callbacks[callbackId] = completer;
-    Future.delayed(Duration(milliseconds: 1000))
-      .then((value) => {
-        if (!completer.isCompleted) {
-          completer.completeError("getEditorContent timeout")
-        }
-      });
+    Future.delayed(Duration(milliseconds: 1000)).then((value) => {
+          if (!completer.isCompleted)
+            {completer.completeError("getEditorContent timeout")}
+        });
     executeJs(
         "window.webkit.messageHandlers.ipcRender.postMessage({'content': window.denkGetKey('getEditorByFilePath')('${currentFilePath}').getValue(), 'callbackid': ${callbackId}}) ");
     return completer.future;

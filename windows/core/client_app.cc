@@ -2,7 +2,7 @@
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 
-#include "tests/shared/common/client_app.h"
+#include "client_app.h"
 
 #include "include/cef_command_line.h"
 
@@ -41,7 +41,7 @@ ClientApp::ProcessType ClientApp::GetProcessType(
 
 void ClientApp::OnRegisterCustomSchemes(
     CefRawPtr<CefSchemeRegistrar> registrar) {
-  RegisterCustomSchemes(registrar);
+  // RegisterCustomSchemes(registrar);
 }
 
 }  // namespace client

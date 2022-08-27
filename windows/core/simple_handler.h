@@ -44,7 +44,11 @@ class SimpleHandler : public CefClient,
                            ErrorCode errorCode,
                            const CefString& errorText,
                            const CefString& failedUrl) override;
-
+                           
+  virtual bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
+                                        CefRefPtr<CefFrame> frame,
+                                        CefProcessId source_process,
+                                        CefRefPtr<CefProcessMessage> message) override;
   // Request that all existing browser windows close.
   void CloseAllBrowsers(bool force_close);
 

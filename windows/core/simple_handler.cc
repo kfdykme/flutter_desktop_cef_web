@@ -2,7 +2,7 @@
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 
-#include "tests/cefsimple/simple_handler.h"
+#include "simple_handler.h"
 
 #include <sstream>
 #include <string>
@@ -14,6 +14,8 @@
 #include "include/views/cef_window.h"
 #include "include/wrapper/cef_closure_task.h"
 #include "include/wrapper/cef_helpers.h"
+
+#include "../include/flutter_desktop_cef_web/flutter_desktop_cef_web_plugin.h"
 
 namespace {
 
@@ -103,6 +105,17 @@ void SimpleHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser) {
     CefQuitMessageLoop();
   }
 }
+
+bool SimpleHandler::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
+                                        CefRefPtr<CefFrame> frame,
+                                        CefProcessId source_process,
+                                        CefRefPtr<CefProcessMessage> message) {
+
+    CefRefPtr<CefListValue> args = message->GetArgumentList();
+    const CefString& msg = args->GetString(0);
+    FlutterDesktopCefWebPluginCefIpcRender(msg.ToString().c_str());
+    return false;
+  }
 
 void SimpleHandler::OnLoadError(CefRefPtr<CefBrowser> browser,
                                 CefRefPtr<CefFrame> frame,
