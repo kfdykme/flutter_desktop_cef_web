@@ -25,6 +25,8 @@ class FlutterDesktopCefWeb {
 
   int cefId = FlutterDesktopCefWeb.global_cef_id++;
 
+  bool isShowing = true;
+
   FlutterDesktopCefWeb() {
     mMethodChannel = const MethodChannel(kMethodChannelName);
 
@@ -57,7 +59,8 @@ class FlutterDesktopCefWeb {
   }
 
   executeJs(String content) {
-    invokeMethod("executeJs", <String, Object>{'content': content});
+    if (isShowing)
+      invokeMethod("executeJs", <String, Object>{'content': content});
   }
 
   showDevtools() {
@@ -127,13 +130,21 @@ class FlutterDesktopCefWeb {
       "height": height.toString()
     });
   }
-
+   void toggle() {
+    if (isShowing) {
+      hide();
+    } else {
+      show();
+    }
+  }
   void show() {
     invokeMethod("show", {});
+    isShowing = true;
   }
 
   void hide() {
     invokeMethod("hide", {});
+    isShowing = false;
   }
 }
 
