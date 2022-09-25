@@ -133,9 +133,10 @@ public class FlutterDesktopCefWebPlugin: NSObject, FlutterPlugin {
 
   var webConfig:[Int:[String:Any]] = [:]
   
-  public static func OnResize() {
+    public static func OnResize(delay: Bool = false) {
     print("static OnResize")
-    FlutterDesktopCefWebPlugin.channel?.invokeMethod("onResize", arguments: nil)
+    let data: [String:Bool] = ["delay": delay]
+    FlutterDesktopCefWebPlugin.channel?.invokeMethod("onResize", arguments: data)
   }
 
   public static func register(with registrar: FlutterPluginRegistrar) {
