@@ -60,6 +60,10 @@ class _MyAppState extends State<MyApp> {
               MaterialButton(
                 onPressed: () {
                   web.loadCefContainer();
+
+                  Future.delayed(Duration(seconds: 1), () {
+                    web.loadUrl("http://www.baidu.com");
+                  });
                 },
                 child: Text("Load Cef"),
               ),

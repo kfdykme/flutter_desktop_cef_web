@@ -75,6 +75,8 @@ namespace
   void FlutterDesktopCefWebPlugin::RegisterWithRegistrar(
       flutter::PluginRegistrarWindows *registrar)
   {
+    
+    std::cout << "FlutterDesktopCefWebPlugin::RegisterWithRegistrar" << std::endl;
     auto channel =
         std::make_shared<flutter::MethodChannel<flutter::EncodableValue>>(
             registrar->messenger(), "flutter_desktop_cef_web",
@@ -86,7 +88,13 @@ namespace
     channel->SetMethodCallHandler(
         [plugin_pointer = plugin.get()](const auto &call, auto result)
         {
-          plugin_pointer->HandleMethodCall(call, std::move(result));
+          if (plugin_pointer == nullptr) {
+              std::cout << "FlutterDesktopCefWebPlugin::FlutterDesktopCefWebPlugin plugin_pointer is nullptr" << std::endl;
+
+          } else {
+
+            plugin_pointer->HandleMethodCall(call, std::move(result));
+          }
         });
 
     plugin->setWinId(registrar->GetView()->GetNativeWindow());
@@ -193,7 +201,7 @@ namespace
       const flutter::MethodCall<flutter::EncodableValue> &method_call,
       std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result)
   {
-    std::cout << "FlutterDesktopCefWebPlugin::HandleMethodCall" << std::endl;
+    std::cout << "FlutterDesktopCefWebPlugin::HandleMethodCall" << method_call.method_name() << std::endl;
     if (method_call.method_name().compare("loadCef") == 0)
     {
       const auto *arguments = std::get_if<flutter::EncodableMap>(method_call.arguments());
@@ -214,9 +222,13 @@ namespace
           auto browser = handler->GetBrowser();
           if (browser)
           {
-            HWND wid = browser->GetHost()->GetWindowHandle();
+            auto host = browser->GetHost();
+            if (host) {
 
-            MoveWindow(wid, x, y, width, height, TRUE);
+              HWND wid = host->GetWindowHandle();
+
+              MoveWindow(wid, x, y, width, height, TRUE);
+            }
           }
         }
         else
@@ -258,6 +270,7 @@ namespace
 
         default_url = url;
       }
+      result->Success(flutter::EncodableValue("ok"));
     }
     else if (method_call.method_name().compare("hide") == 0)
     {
@@ -280,6 +293,7 @@ namespace
           }
         }
       }
+      result->Success(flutter::EncodableValue("ok"));
     }
     else if (method_call.method_name().compare("show") == 0)
     {
@@ -302,6 +316,7 @@ namespace
           }
         }
       }
+        result->Success(flutter::EncodableValue("ok"));
     }
     else  if (method_call.method_name().compare("executeJs") == 0)
     {
@@ -317,11 +332,17 @@ namespace
         if (handler != nullptr)
         {
           auto browser = handler->GetBrowser();
-          browser->GetMainFrame()->ExecuteJavaScript(
-            CefString(content),
-            browser->GetMainFrame()->GetURL(),
-            0
-          );
+          if (browser) {
+            auto frame = browser->GetMainFrame();
+            if (frame) {
+
+              frame->ExecuteJavaScript(
+                CefString(content),
+                browser->GetMainFrame()->GetURL(),
+                0
+              );
+            }
+          } 
           result->Success(flutter::EncodableValue("ok"));
         } else {
           result->Success(flutter::EncodableValue("executeJs error"));
