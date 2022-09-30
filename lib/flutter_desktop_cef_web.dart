@@ -37,8 +37,10 @@ class FlutterDesktopCefWeb {
       });
 
       if (call.method == "onResize") {
-        print("${kMethodChannelName} onResize");
-        loadCefContainer();
+        print("${kMethodChannelName} onResize  args:${call.arguments}");
+        var delay = call.arguments['delay'] as bool;
+        print("${kMethodChannelName} is delay ${delay}");
+        loadCefContainer(delay: delay);
       }
       if (call.method == "ipcRender") {
         print("${kMethodChannelName} ipcRender ${call}");
@@ -82,7 +84,7 @@ class FlutterDesktopCefWeb {
     return container;
   }
 
-  loadCefContainer() {
+  innerloadCefContainer() {
     if (_containerKey.currentContext == null) {
       print("loadCefContainer cancel ${hasGeneratedContainer}");
       return;
@@ -102,6 +104,16 @@ class FlutterDesktopCefWeb {
           size.height.toInt() - 1);
     } else {
       print("loadCefContainer error box is null");
+    }
+  }
+
+  loadCefContainer({bool delay = false}) {
+    if (delay) {
+      Future.delayed(Duration(seconds: 1), () {
+        innerloadCefContainer();
+      });
+    } else {
+      innerloadCefContainer();
     }
   }
 
@@ -130,13 +142,15 @@ class FlutterDesktopCefWeb {
       "height": height.toString()
     });
   }
-   void toggle() {
+
+  void toggle() {
     if (isShowing) {
       hide();
     } else {
       show();
     }
   }
+
   void show() {
     invokeMethod("show", {});
     isShowing = true;
