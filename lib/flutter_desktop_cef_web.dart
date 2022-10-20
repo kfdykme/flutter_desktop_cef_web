@@ -213,9 +213,9 @@ class FlutterDesktopEditor extends FlutterDesktopCefWeb {
     }
   }
 
-  void insertByContentNId(String content, String editorId) {
+  void insertByContentNId(String content, String editorId, { String force = 'false'}) {
     executeJs(
-        'window.denkGetKey("insertIntoEditor")(decodeURIComponent(\"${Uri.encodeComponent(content)}\"), "${editorId}")');
+        'window.denkGetKey("insertIntoEditor")(decodeURIComponent(\"${Uri.encodeComponent(content)}\"), "${editorId}", ${force})');
   }
 
   void registerFunction(String name, Function func) {

@@ -49,7 +49,7 @@ class FlutterDesktopWebViewController: NSViewController, WKUIDelegate,  WKScript
     if (self.window?.styleMask.rawValue == 16399) {
       return 0
     } else {
-      return 28
+      return 0
     }
   }
 
@@ -180,7 +180,7 @@ public class FlutterDesktopCefWebPlugin: NSObject, FlutterPlugin {
           let height = getInt(argva: argv as Any, key:"height") + 1
           let id = getInt(argva: argv as Any, key: "id")
 
-          let titleHeight = webViewController != nil ? webViewController!.getTitleHeight() : 28
+          let titleHeight = webViewController != nil ? webViewController!.getTitleHeight() :0
           print("ensureWebView with titleHeight :")
           print(titleHeight)
           y = Int(mainwindow!.frame.height) - y - height - titleHeight
