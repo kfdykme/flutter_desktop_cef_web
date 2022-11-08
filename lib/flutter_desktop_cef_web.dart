@@ -26,6 +26,7 @@ class FlutterDesktopCefWeb {
 
   int cefId = FlutterDesktopCefWeb.global_cef_id++;
 
+  List<String> paddingJsCode = [];
   bool isShowing = true;
 
   FlutterDesktopCefWeb() {
@@ -72,7 +73,7 @@ class FlutterDesktopCefWeb {
     if (isShowing)
       invokeMethod("executeJs", <String, Object>{'content': content});
     else {
-      print("executeJs but not showing");
+      paddingJsCode.add(content);
     }
   }
 
@@ -166,6 +167,11 @@ class FlutterDesktopCefWeb {
   void show() {
     invokeMethod("show", {});
     isShowing = true;
+
+    paddingJsCode.forEach((jsCode) { 
+      executeJs(jsCode);
+    });
+    paddingJsCode = [];
   }
 
   void hide() {
@@ -226,8 +232,8 @@ class FlutterDesktopEditor extends FlutterDesktopCefWeb {
   }
 
   void tryInsertFirst() {
-    print(
-        "tryInsertFirst ${needInsertFirst} ${needInsertContent} ${needInsertPath}");
+    // print(
+    //     "tryInsertFirst ${needInsertFirst} ${needInsertContent} ${needInsertPath}");
     if (needInsertFirst) {
       insertByContentNId(needInsertContent, needInsertPath);
       toggleInsertFirst();
