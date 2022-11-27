@@ -70,6 +70,9 @@ class FlutterDesktopCefWeb {
   executeJs(String content) {
     if (isShowing)
       invokeMethod("executeJs", <String, Object>{'content': content});
+    else {
+      print("executeJs but not showing");
+    }
   }
 
   showDevtools() {
