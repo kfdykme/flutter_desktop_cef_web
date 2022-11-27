@@ -200,14 +200,14 @@ namespace
       const flutter::MethodCall<flutter::EncodableValue> &method_call,
       std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result)
   {
-    std::cout << "FlutterDesktopCefWebPlugin::HandleMethodCall " << method_call.method_name() << std::endl;
+    // std::cout << "FlutterDesktopCefWebPlugin::HandleMethodCall " << method_call.method_name() << std::endl;
     if (method_call.method_name().compare("loadCef") == 0)
     {
       const auto *arguments = std::get_if<flutter::EncodableMap>(method_call.arguments());
-      std::cout << "load before -2" << std::endl;
+      // std::cout << "load before -2" << std::endl;
       if (arguments)
       {
-        std::cout << "load before -1" << std::endl;
+        // std::cout << "load before -1" << std::endl;
         int x = getInt(arguments, "x");
         int y = getInt(arguments, "y");
         int width = getInt(arguments, "width");
@@ -217,7 +217,7 @@ namespace
         auto handler = getCefClientById(id);
         if (handler != nullptr)
         {
-          std::cout << "load before 2" << std::endl;
+          // std::cout << "load before 2" << std::endl;
           auto browser = handler->GetBrowser();
           if (browser)
           {
@@ -232,7 +232,7 @@ namespace
         }
         else
         {
-          std::cout << "load before 3" << std::endl;
+          // std::cout << "load before 3" << std::endl;
           CefRect rc(x, y, width, height);
           OnContextInitialized(winId(), rc, id, default_url);
         }

@@ -31,15 +31,18 @@ class FlutterDesktopCefWeb {
     mMethodChannel = const MethodChannel(kMethodChannelName);
 
     mMethodChannel.setMethodCallHandler((call) {
-      print("${kMethodChannelName} call.method ${call.method}");
+      // print("${kMethodChannelName} call.method ${call.method}");
       var result = Future<dynamic>(() {
         return false;
       });
 
       if (call.method == "onResize") {
-        print("${kMethodChannelName} onResize  args:${call.arguments}");
-        var delay = call.arguments['delay'] as bool;
-        print("${kMethodChannelName} is delay ${delay}");
+        // print("${kMethodChannelName} onResize  args:${call.arguments}");
+        var delay  = false;
+        if (call.arguments != null) {
+          delay = call.arguments['delay'] as bool;
+          print("${kMethodChannelName} is delay ${delay}");
+        } 
         loadCefContainer(delay: delay);
       }
       if (call.method == "ipcRender") {
@@ -108,6 +111,7 @@ class FlutterDesktopCefWeb {
   }
 
   loadCefContainer({bool delay = false}) {
+    // print("loadCefContainer ${delay}");
     if (delay) {
       Future.delayed(Duration(seconds: 1), () {
         innerloadCefContainer();
