@@ -163,8 +163,7 @@ namespace
     std::string res = "";
     if (status_it != args->end())
     {
-      auto str = std::get<std::string>(status_it->second);
-      std::cout << "get " << key.c_str() << ": " << str.c_str() << std::endl;
+      auto str = std::get<std::string>(status_it->second); 
       res = str;
     }
     return res;
@@ -201,7 +200,7 @@ namespace
       const flutter::MethodCall<flutter::EncodableValue> &method_call,
       std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result)
   {
-    std::cout << "FlutterDesktopCefWebPlugin::HandleMethodCall" << method_call.method_name() << std::endl;
+    std::cout << "FlutterDesktopCefWebPlugin::HandleMethodCall " << method_call.method_name() << std::endl;
     if (method_call.method_name().compare("loadCef") == 0)
     {
       const auto *arguments = std::get_if<flutter::EncodableMap>(method_call.arguments());
@@ -326,7 +325,7 @@ namespace
       {
         std::string content = getString(arguments, "content");
   
-        std::cout << "executeJs:" << content << std::endl;
+        // std::cout << "executeJs:" << content << std::endl;
         int id = getInt(arguments, "id");
         auto handler = getCefClientById(id);
         if (handler != nullptr)
