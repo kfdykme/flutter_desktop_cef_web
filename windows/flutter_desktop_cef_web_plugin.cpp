@@ -101,6 +101,7 @@ namespace
     registrar->AddPlugin(std::move(plugin));
   }
 
+
   FlutterDesktopCefWebPlugin::FlutterDesktopCefWebPlugin()
   {
 
@@ -189,7 +190,7 @@ namespace
     auto handler_iterator = FlutterDesktopCefWebPlugin::cef_handlers.find(id);
     if (!FlutterDesktopCefWebPlugin::cef_handlers.empty() && handler_iterator != FlutterDesktopCefWebPlugin::cef_handlers.end())
     {
-      std::cout << "load before 2" << std::endl;
+      std::cout << "getCefClientById" << id <<  std::endl;
       auto handler = handler_iterator->second;
       return handler;
     }
@@ -200,7 +201,7 @@ namespace
       const flutter::MethodCall<flutter::EncodableValue> &method_call,
       std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result)
   {
-    // std::cout << "FlutterDesktopCefWebPlugin::HandleMethodCall " << method_call.method_name() << std::endl;
+    std::cout << "FlutterDesktopCefWebPlugin::HandleMethodCall " << method_call.method_name() << std::endl;
     if (method_call.method_name().compare("loadCef") == 0)
     {
       const auto *arguments = std::get_if<flutter::EncodableMap>(method_call.arguments());
@@ -317,7 +318,29 @@ namespace
       }
         result->Success(flutter::EncodableValue("ok"));
     }
-    else  if (method_call.method_name().compare("executeJs") == 0)
+    else if (method_call.method_name().compare("releaseFocus") == 0) {
+      const auto *arguments = std::get_if<flutter::EncodableMap>(method_call.arguments());
+      if (arguments)
+      { 
+
+        int id = getInt(arguments, "id");
+        auto handler = getCefClientById(id);
+        if (handler != nullptr)
+        {
+          auto browser = handler->GetBrowser();
+          if (browser)
+          {
+            browser->GetHost()->SetFocus(false);
+          } else {
+            std::cout << "without browser " << id <<std::endl;
+          }
+        } else {
+          std::cout << "without handler for id" << id<<std::endl;
+        }
+      }
+      result->Success(flutter::EncodableValue("ok"));
+
+    } else  if (method_call.method_name().compare("executeJs") == 0)
     {
 
       const auto *arguments = std::get_if<flutter::EncodableMap>(method_call.arguments());
@@ -483,6 +506,20 @@ void FlutterDesktopCefWebPluginCefOnResize()
   if (FlutterDesktopCefWebPlugin::cef_channle)
   {
     FlutterDesktopCefWebPlugin::cef_channle->InvokeMethod("onResize", nullptr);
+  }
+  else
+  {
+    std::cout << "FlutterDesktopCefWebPluginCefOnResize but channel is nullptr" << std::endl;
+  }
+}
+
+
+  
+void FlutterDesktopCefWebPluginCefReleaseFocus() {
+  
+  if (FlutterDesktopCefWebPlugin::cef_channle)
+  {
+    FlutterDesktopCefWebPlugin::cef_channle->InvokeMethod("releaseFocus", nullptr);
   }
   else
   {

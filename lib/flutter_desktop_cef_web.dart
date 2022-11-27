@@ -45,6 +45,10 @@ class FlutterDesktopCefWeb {
         } 
         loadCefContainer(delay: delay);
       }
+      if (call.method == "releaseFocus") {
+        releaseFocus();
+      }
+
       if (call.method == "ipcRender") {
         print("${kMethodChannelName} ipcRender ${call}");
         handleIpcRenderMessage(call.arguments);
@@ -163,6 +167,15 @@ class FlutterDesktopCefWeb {
   void hide() {
     invokeMethod("hide", {});
     isShowing = false;
+  }
+  
+  void releaseFocus() {
+    Future.delayed(Duration(seconds: 1), () {
+         allWebViews.forEach((element) { 
+      element.invokeMethod("releaseFocus", {});
+    });
+      });
+   
   }
 }
 
