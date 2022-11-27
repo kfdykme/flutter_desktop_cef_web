@@ -2,6 +2,7 @@ library flutter_desktop_cef_web;
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -253,8 +254,12 @@ class FlutterDesktopEditor extends FlutterDesktopCefWeb {
           if (!completer.isCompleted)
             {completer.completeError("getEditorContent timeout")}
         });
+    if (Platform.isWindows) {
+      currentFilePath.replaceAll("\\", "\\\\");
+    }
+    print("kfdebug ${currentFilePath}");
     executeJs(
-        "window.webkit.messageHandlers.ipcRender.postMessage({'content': window.denkGetKey('getEditorByFilePath')('${currentFilePath}').getValue(), 'callbackid': ${callbackId}}) ");
+        "window.denkGetKey('sendIpcMessage')({'content': window.denkGetKey('getEditorByFilePath')('${currentFilePath}').getValue(), 'callbackid': ${callbackId}}) ");
     return completer.future;
   }
 }
