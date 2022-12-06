@@ -131,8 +131,8 @@ class FlutterDesktopCefWeb {
   }
 
   loadUrl(String url) {
-    // mMethodChannel.invokeMethod("loadUrl", <String, Object>{'url': url});
-    invokeMethod("loadUrl", <String, Object>{'url': url});
+    loadCefContainer();
+    executeJs("window.open('$url','_self')");
   }
 
   invokeMethod(String invoke, dynamic arguments) {
@@ -232,8 +232,6 @@ class FlutterDesktopEditor extends FlutterDesktopCefWeb {
   }
 
   void tryInsertFirst() {
-    // print(
-    //     "tryInsertFirst ${needInsertFirst} ${needInsertContent} ${needInsertPath}");
     if (needInsertFirst) {
       insertByContentNId(needInsertContent, needInsertPath);
       toggleInsertFirst();
@@ -263,7 +261,6 @@ class FlutterDesktopEditor extends FlutterDesktopCefWeb {
     if (Platform.isWindows) {
       currentFilePath.replaceAll("\\", "\\\\");
     }
-    print("kfdebug ${currentFilePath}");
     executeJs(
         "window.denkGetKey('sendIpcMessage')({'content': window.denkGetKey('getEditorByFilePath')('${currentFilePath}').getValue(), 'callbackid': ${callbackId}}) ");
     return completer.future;

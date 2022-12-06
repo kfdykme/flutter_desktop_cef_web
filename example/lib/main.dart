@@ -62,7 +62,9 @@ class _MyAppState extends State<MyApp> {
                   web.loadCefContainer();
 
                   Future.delayed(Duration(seconds: 1), () {
-                    web.loadUrl("http://www.baidu.com");
+
+                    // web.loadCefContainer();
+                    web.loadUrl("https://www.qq.com");
                   });
                 },
                 child: Text("Load Cef"),

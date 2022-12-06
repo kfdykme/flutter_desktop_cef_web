@@ -2,7 +2,77 @@ import Cocoa
 import FlutterMacOS
 import WebKit
 
+class ImageSchemehandler: NSObject, WKURLSchemeHandler {
+    
+    func webView(_ webView: WKWebView, start urlSchemeTask: WKURLSchemeTask) {
+       let requestUrl = urlSchemeTask.request.url;
+        print("urlSchemeTask webView start " + requestUrl!.absoluteString);
+        if (requestUrl == nil) {
+            print("urlSchemeTask url nil");
+            return;
+        }
+        let prefix = "lowh://";
+        if (!requestUrl!.absoluteString.contains(prefix)) {
+            print("urlSchemeTask url not hit");
+            return;
+        }
+        
+        let absolutePath = urlSchemeTask.request.url?.absoluteString;
+        var fullPath = absolutePath!.substring(from: absolutePath!.index(absolutePath!.startIndex, offsetBy: prefix.count))
+        
+        var fileHandle = FileHandle(forReadingAtPath: fullPath);
+        
+        if #available(macOS 10.15.4, *) {
+            var fileData = try? fileHandle?.readToEnd()
+            
+            if (fileData != nil) {
+                urlSchemeTask.didReceive(URLResponse(url: urlSchemeTask.request.url!, mimeType: "image/png", expectedContentLength: fileData!.count, textEncodingName: "utf-8"));
+                
+                urlSchemeTask.didReceive(fileData!);
+                urlSchemeTask.didFinish();
+                print("urlSchemeTask finish");
+            } else {
+                // 404 image
+                
+                let fullPath404 = Bundle.main.bundlePath + "/Contents/Resources/manoco-editor/404.png"
+                print(fullPath404);
+                fileHandle?.closeFile();
+                fileHandle = FileHandle(forReadingAtPath: fullPath404);
+                fileData = try! fileHandle?.readToEnd();
+                urlSchemeTask.didReceive(URLResponse(url: urlSchemeTask.request.url!, mimeType: "image/png", expectedContentLength: fileData!.count, textEncodingName: "utf-8"));
+                
+                urlSchemeTask.didReceive(fileData!);
+                urlSchemeTask.didFinish();
+                
+            }
+            
+        } else {
+            
+//                urlSchemeTask.didReceive(URLResponse(url: urlSchemeTask.request.url!, statusCode: 405, httpVersion: nil, headerFields: nil))
+//                urlSchemeTask.didFinish();
+//            urlSchemeTask.
+            print("version error")
+        };
+        fileHandle?.closeFile()
+        
+    }
+    
+    func webView(_ webView: WKWebView, stop urlSchemeTask: WKURLSchemeTask) {
+        let requestUrl = urlSchemeTask.request.url;
+        print("load webView stop " + requestUrl!.absoluteString);
+        if (requestUrl == nil) {
+            return;
+        }
+        if (!requestUrl!.absoluteString.contains("lowh://")) {
+            return;
+        }
+        
+    }
+}
+
 class FlutterDesktopWebViewController: NSViewController, WKUIDelegate,  WKScriptMessageHandler {
+    
+    
   var webView: WKWebView!
 
   var views: [Int: WKWebView] = [:]
@@ -16,10 +86,16 @@ class FlutterDesktopWebViewController: NSViewController, WKUIDelegate,  WKScript
 
     if (userContentController == nil) {
       userContentController = WKUserContentController()
-      userContentController
     }
     webConfiguration.userContentController = userContentController!
     webConfiguration.userContentController.add(self, name: "ipcRender")
+      if #available(macOS 10.13, *) {
+        print("kfdebug createWebView setURLSchemeHandler")
+          webConfiguration.setURLSchemeHandler(ImageSchemehandler(), forURLScheme: "lowh")
+      } else {
+          // Fallback on earlier versions
+        print("kfdebug createWebView setURLSchemeHandler nil")
+      }
     if (rect != nil) {
       let mainwindow = NSApplication.shared.mainWindow!
       webView = WKWebView(frame: rect!, configuration: webConfiguration)
@@ -31,6 +107,7 @@ class FlutterDesktopWebViewController: NSViewController, WKUIDelegate,  WKScript
       return nil
     }
   }
+    
   func userContentController(
       _ userContentController: WKUserContentController,
       didReceive message: WKScriptMessage
@@ -181,8 +258,8 @@ public class FlutterDesktopCefWebPlugin: NSObject, FlutterPlugin {
           let id = getInt(argva: argv as Any, key: "id")
 
           let titleHeight = webViewController != nil ? webViewController!.getTitleHeight() :0
-          print("ensureWebView with titleHeight :")
-          print(titleHeight)
+          // print("ensureWebView with titleHeight :")
+          // print(titleHeight)
           y = Int(mainwindow!.frame.height) - y - height - titleHeight
           webViewController?.loadWebView( rect:  CGRect.init(x: x, y: y, width: width, height: height), id: id)
           return true
