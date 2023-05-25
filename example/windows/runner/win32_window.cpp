@@ -3,6 +3,7 @@
 #include <flutter_windows.h>
 
 #include "resource.h"
+#include <flutter_desktop_cef_web/flutter_desktop_cef_web_plugin.h>
 
 namespace {
 
@@ -171,6 +172,7 @@ Win32Window::MessageHandler(HWND hwnd,
       SetWindowPos(hwnd, nullptr, newRectSize->left, newRectSize->top, newWidth,
                    newHeight, SWP_NOZORDER | SWP_NOACTIVATE);
 
+      FlutterDesktopCefWebPluginCefOnResize();
       return 0;
     }
     case WM_SIZE: {
@@ -180,6 +182,7 @@ Win32Window::MessageHandler(HWND hwnd,
         MoveWindow(child_content_, rect.left, rect.top, rect.right - rect.left,
                    rect.bottom - rect.top, TRUE);
       }
+      FlutterDesktopCefWebPluginCefOnResize();
       return 0;
     }
 
