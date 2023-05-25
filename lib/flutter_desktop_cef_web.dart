@@ -16,6 +16,8 @@ class FlutterDesktopCefWeb {
   bool hasGeneratedContainer = false;
   
   final int MAX_LOAD_COUNT = 10;
+
+  int titleHeight = 30;
   static registerWith() {
     print("FlutterDesktopCefWeb registerWith");
   }
@@ -34,7 +36,9 @@ class FlutterDesktopCefWeb {
 
   FlutterDesktopCefWeb() {
     mMethodChannel = const MethodChannel(kMethodChannelName);
-
+    if (Platform.isWindows) {
+      titleHeight = 0;
+    }
     mMethodChannel.setMethodCallHandler((call) {
       // print("${kMethodChannelName} call.method ${call.method}");
       var result = Future<dynamic>(() {
@@ -94,7 +98,7 @@ class FlutterDesktopCefWeb {
         key: _containerKey,
         child: Container(
           width: null,
-          color: Colors.amberAccent,
+          color: Colors.transparent,
           height: height == -1 ? null : height,
         ));
     hasGeneratedContainer = true;
@@ -103,10 +107,11 @@ class FlutterDesktopCefWeb {
 
   bool innerloadCefContainer() {
     if (_containerKey.currentContext == null) {
-      print("loadCefContainer cancel ${hasGeneratedContainer}");
+      print("loadCefContainer cancel hasGeneratedContainer ${hasGeneratedContainer}");
       return false;
     }
-    ;
+    print("innerloadCefContainer titleHeight ${titleHeight}");
+    
     var size = _containerKey.currentContext!.findRenderObject()!.paintBounds;
     RenderObject renderObject =
         _containerKey.currentContext!.findRenderObject()!;
@@ -116,7 +121,7 @@ class FlutterDesktopCefWeb {
       // if (size.width.toInt() - 1)
       invokeLoadCef(
           position.dx.toInt() + 1,
-          position.dy.toInt() - 1,
+          position.dy.toInt() - 1 + titleHeight,
           size.width.toInt() - 1 > 0 ? size.width.toInt() - 1 : 1,
           size.height.toInt() - 1);
     } else {
