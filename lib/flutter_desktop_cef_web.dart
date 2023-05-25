@@ -14,6 +14,8 @@ const kMethodChannelName = "flutter_desktop_cef_web";
 class FlutterDesktopCefWeb {
   late MethodChannel mMethodChannel;
   bool hasGeneratedContainer = false;
+  
+  final int MAX_LOAD_COUNT = 10;
   static registerWith() {
     print("FlutterDesktopCefWeb registerWith");
   }
@@ -28,6 +30,7 @@ class FlutterDesktopCefWeb {
 
   List<String> paddingJsCode = [];
   bool isShowing = true;
+  bool hasDefaultUrl = false;
 
   FlutterDesktopCefWeb() {
     mMethodChannel = const MethodChannel(kMethodChannelName);
@@ -67,6 +70,7 @@ class FlutterDesktopCefWeb {
 
   setUrl(String url) {
     invokeMethod("setUrl", <String, Object>{'url': url});
+    hasDefaultUrl = true;
   }
 
   executeJs(String content) {
@@ -90,16 +94,17 @@ class FlutterDesktopCefWeb {
         key: _containerKey,
         child: Container(
           width: null,
+          color: Colors.amberAccent,
           height: height == -1 ? null : height,
         ));
     hasGeneratedContainer = true;
     return container;
   }
 
-  innerloadCefContainer() {
+  bool innerloadCefContainer() {
     if (_containerKey.currentContext == null) {
       print("loadCefContainer cancel ${hasGeneratedContainer}");
-      return;
+      return false;
     }
     ;
     var size = _containerKey.currentContext!.findRenderObject()!.paintBounds;
@@ -117,22 +122,42 @@ class FlutterDesktopCefWeb {
     } else {
       print("loadCefContainer error box is null");
     }
+    return true;
   }
 
-  loadCefContainer({bool delay = false}) {
+  Future<bool> loadCefContainer({bool delay = false , int count = 0}) {
     // print("loadCefContainer ${delay}");
+    var loadCompleter = new Completer<bool>(); 
     if (delay) {
       Future.delayed(Duration(seconds: 1), () {
-        innerloadCefContainer();
+        var res = innerloadCefContainer();
+        if (res && count < MAX_LOAD_COUNT) {
+          loadCompleter.complete(delay);
+        } else {
+          loadCefContainer(delay: true, count: count +1);
+        }
       });
     } else {
-      innerloadCefContainer();
+      var res = innerloadCefContainer();
+      if (res) {
+        loadCompleter.complete(delay);
+      } else {
+        loadCefContainer(delay: true, count: count +1);
+      } 
     }
+
+    return loadCompleter.future;
   }
 
   loadUrl(String url) {
     loadCefContainer();
-    executeJs("window.open('$url','_self')");
+    if (!hasDefaultUrl) {
+      invokeMethod("loadUrl", <String, Object>{
+        "url": url
+      });
+    } else {
+      executeJs("window.open('$url','_self')");
+    }
   }
 
   invokeMethod(String invoke, dynamic arguments) {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 
 import 'package:flutter/services.dart';
+import 'package:flutter_desktop_cef_web/cef_widget.dart';
 import 'package:flutter_desktop_cef_web/flutter_desktop_cef_web.dart';
 
 void main() {
@@ -58,18 +59,11 @@ class _MyAppState extends State<MyApp> {
             children: [
               Text('Running on: $_platformVersion\n'),
               MaterialButton(
-                onPressed: () {
-                  web.loadCefContainer();
-
-                  Future.delayed(Duration(seconds: 1), () {
-
-                    // web.loadCefContainer();
-                    web.loadUrl("https://www.qq.com");
-                  });
+                onPressed: () {  
                 },
                 child: Text("Load Cef"),
               ),
-              web.generateCefContainer(500, 500)
+              CefWidget()
             ],
           ),
         ),

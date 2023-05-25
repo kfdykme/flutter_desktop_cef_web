@@ -190,7 +190,7 @@ namespace
     auto handler_iterator = FlutterDesktopCefWebPlugin::cef_handlers.find(id);
     if (!FlutterDesktopCefWebPlugin::cef_handlers.empty() && handler_iterator != FlutterDesktopCefWebPlugin::cef_handlers.end())
     {
-      std::cout << "getCefClientById" << id <<  std::endl;
+      std::cout << "getCefClientById " << id <<  std::endl;
       auto handler = handler_iterator->second;
       return handler;
     }
@@ -218,7 +218,7 @@ namespace
         auto handler = getCefClientById(id);
         if (handler != nullptr)
         {
-          // std::cout << "load before 2" << std::endl;
+          std::cout << "load before 2" << std::endl;
           auto browser = handler->GetBrowser();
           if (browser)
           {
@@ -233,7 +233,7 @@ namespace
         }
         else
         {
-          // std::cout << "load before 3" << std::endl;
+          std::cout << "OnContextInitialized" << default_url << std::endl;
           CefRect rc(x, y, width, height);
           OnContextInitialized(winId(), rc, id, default_url);
         }
