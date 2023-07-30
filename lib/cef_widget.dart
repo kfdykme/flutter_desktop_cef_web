@@ -7,12 +7,12 @@ const DEFAULT_URL = "https://www.qq.com";
 class CefWidget extends StatefulWidget {
 
   
-  var web = FlutterDesktopCefWeb();
+  late FlutterDesktopCefWeb web;
 
   late String url;
-  CefWidget({Key? key, String url = DEFAULT_URL}) : super(key: key){
-    
-    web.setUrl(url);
+  CefWidget({Key? key, String url = DEFAULT_URL, FlutterDesktopCefWeb? web}) : super(key: key){
+    this.web = web ?? FlutterDesktopCefWeb();
+    this.web.setUrl(url);
   }
 
   @override
@@ -35,7 +35,6 @@ class CefState extends State<CefWidget> {
 
   @override
   Widget build(BuildContext context) { 
-    // return widget.web.generateCefContainer(MediaQuery.of(context).size.width, MediaQuery.of(context).size.height);
     return widget.web.generateCefContainer(MediaQuery.of(context).size.width, MediaQuery.of(context).size.height);
   }
 

@@ -68,8 +68,8 @@ class FlutterDesktopCefWeb {
     FlutterDesktopCefWeb.allWebViews.add(this);
   }
 
-  bool handleIpcRenderMessage(dynamic arguments) {
-    return false;
+  Future<bool> handleIpcRenderMessage(dynamic arguments) {
+    return Future.value(false);
   }
 
   setUrl(String url) {
@@ -171,13 +171,6 @@ class FlutterDesktopCefWeb {
   }
 
   invokeLoadCef(int x, int y, int width, int height) {
-    print("loadCef ${x} ${y} ${width} ${height} id:${cefId}\n");
-    // invokeMethod("loadCef", <String, Object>{
-    //   'x':'0',
-    //   'y': '0',
-    //   "width": '400',
-    //   "height": '400',
-    // });
     invokeMethod("loadCef", <String, Object>{
       'x': x.toString(),
       'y': y.toString(),
@@ -224,13 +217,14 @@ class FlutterDesktopEditor extends FlutterDesktopCefWeb {
   Map<int, Completer<String>> callbacks = new Map();
 
   Map<String, Function> invokeFunctions = new Map();
-
+  Map<String, Function> invokeFunctionsForResult = new Map();
+  Map<String, dynamic> paddingInvokeFunctions = new Map();
   // for try insert first
   bool needInsertFirst = false;
   String needInsertContent = "";
   String needInsertPath = "";
 
-  bool handleIpcRenderMessage(dynamic arguments) {
+  Future<bool> handleIpcRenderMessage(dynamic arguments) async {
     if (arguments.runtimeType == String) {
       print("handleIpcRenderMessage as string: ${arguments}");
       arguments = jsonDecode(arguments);
@@ -248,9 +242,18 @@ class FlutterDesktopEditor extends FlutterDesktopCefWeb {
           arguments['name'] != null ? arguments['name'].toString() : '';
 
       Function? func = invokeFunctions[name];
+      Function? resultFunc = invokeFunctionsForResult[name];
       if (func != null) {
         func(arguments['data']);
+      } else if (resultFunc != null) {
+        dynamic result = resultFunc(arguments['data']);
+        if (result is Future) {
+          result = await (result);
+        }
+        String callbackId = arguments['data']['callbackId'];
+        executeJs('window.denkGetKey("invokeCallback")("$callbackId", "$result")');
       } else {
+        paddingInvokeFunctions[name] = arguments;
         print("handleIpcRenderMessage without function");
       }
     }
@@ -275,13 +278,20 @@ class FlutterDesktopEditor extends FlutterDesktopCefWeb {
 
   void registerFunction(String name, Function func) {
     invokeFunctions[name] = func;
+    if (paddingInvokeFunctions.containsKey(name)) {
+      handleIpcRenderMessage(paddingInvokeFunctions[name]);
+      paddingInvokeFunctions.remove(name);
+    }
+  }
+
+  void registerFunctionWithResult(String name, Function func) {
+    invokeFunctionsForResult[name] = func;
   }
 
   Future<String> getEditorContent(
     String currentFilePath,
   ) {
     Completer<String> completer = new Completer();
-    // window.webkit.messageHandlers.ipcRender.postMessage({'a':1})
     int callbackId = callbackIdCount++;
     callbacks[callbackId] = completer;
     Future.delayed(Duration(milliseconds: 1000)).then((value) => {
