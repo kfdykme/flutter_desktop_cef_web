@@ -2,6 +2,7 @@ import Cocoa
 import FlutterMacOS
 import WebKit
 
+
 class ImageSchemehandler: NSObject, WKURLSchemeHandler {
     
     func webView(_ webView: WKWebView, start urlSchemeTask: WKURLSchemeTask) {
@@ -18,7 +19,7 @@ class ImageSchemehandler: NSObject, WKURLSchemeHandler {
         }
         
         let absolutePath = urlSchemeTask.request.url?.absoluteString;
-        var fullPath = absolutePath!.substring(from: absolutePath!.index(absolutePath!.startIndex, offsetBy: prefix.count))
+        let fullPath = absolutePath!.substring(from: absolutePath!.index(absolutePath!.startIndex, offsetBy: prefix.count))
         
         var fileHandle = FileHandle(forReadingAtPath: fullPath);
         
@@ -97,7 +98,7 @@ class FlutterDesktopWebViewController: NSViewController, WKUIDelegate,  WKScript
         print("kfdebug createWebView setURLSchemeHandler nil")
       }
     if (rect != nil) {
-      let mainwindow = NSApplication.shared.mainWindow!
+      // let mainwindow = NSApplication.shared.mainWindow!
       webView = WKWebView(frame: rect!, configuration: webConfiguration)
       webView.uiDelegate = self
       // views.updateValue(value: webView, forKey: id)
@@ -145,7 +146,7 @@ class FlutterDesktopWebViewController: NSViewController, WKUIDelegate,  WKScript
 
     let myURL = URL(string:url)
     let myRequest = URLRequest(url: myURL!)
-    var view = views[id]
+    let view = views[id]
     if (view != nil) {
       view?.load(myRequest)
     } else {
@@ -154,7 +155,7 @@ class FlutterDesktopWebViewController: NSViewController, WKUIDelegate,  WKScript
   }
  
   func executeJs(jscode: String, id: Int) {
-    var view = views[id]
+    let view = views[id]
     if (view != nil) {
       view?.evaluateJavaScript(jscode, completionHandler: nil)
     }
@@ -168,7 +169,7 @@ class FlutterDesktopWebViewController: NSViewController, WKUIDelegate,  WKScript
           view = createWebView(rect: rect, id:id)
           if (view != nil) {
             mainwindow.contentView?.addSubview(view!)
-            var req = penddingRequests[id]
+            let req = penddingRequests[id]
             if (req != nil) {
               view!.load(req!)
               penddingRequests.removeValue(forKey: id)
@@ -181,8 +182,8 @@ class FlutterDesktopWebViewController: NSViewController, WKUIDelegate,  WKScript
 
   func hideWebView(id: Int) {
     // 
-    let mainwindow = NSApplication.shared.mainWindow
-    var view = views[id]
+    // let mainwindow = NSApplication.shared.mainWindow
+    let view = views[id]
     if (view != nil) {
       view?.removeFromSuperview();
     }
@@ -190,7 +191,7 @@ class FlutterDesktopWebViewController: NSViewController, WKUIDelegate,  WKScript
 
   func showWebView(id: Int) {
     let mainwindow = NSApplication.shared.mainWindow
-    var view = views[id]
+    let view = views[id]
     if (view != nil && mainwindow != nil) {
       mainwindow?.contentView?.addSubview(view!)
     }
@@ -223,12 +224,13 @@ public class FlutterDesktopCefWebPlugin: NSObject, FlutterPlugin {
     instance.webViewController = FlutterDesktopWebViewController()
     instance.webViewController!.window = FlutterDesktopCefWebPlugin.window
     FlutterDesktopCefWebPlugin.channel = channel
+    
   }
 
   func getInt(argva: Any, key: String) -> Int {
     let val = getString(argva: argva, key: key)
     if (val != "") {
-      return Int(val as! String)!
+      return Int(val)!
     } else {
       return -1
     }
@@ -268,7 +270,9 @@ public class FlutterDesktopCefWebPlugin: NSObject, FlutterPlugin {
   }
 
   public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
-    
+    if (true) {
+       print("FlutterDesktopCefWebPlugin handle " + call.method); 
+    }
     switch call.method {
     case "getPlatformVersion":
       result("macOS " + ProcessInfo.processInfo.operatingSystemVersionString)
@@ -276,22 +280,32 @@ public class FlutterDesktopCefWebPlugin: NSObject, FlutterPlugin {
       let argv:[String:Any] = call.arguments as! [String: Any]
       let id = getInt(argva: argv, key: "id")
       webConfig[id] = argv
-      ensureWebView(id:id)
+      let res = ensureWebView(id:id)
+      result(res)
     case "setUrl":
       let argv:[String:Any] = call.arguments as! [String: Any]
       let url = getString(argva:argv, key:"url");
       let id = getInt(argva: argv, key: "id")
       print(call.method + ":" + url)
-      ensureWebView(id:id)
-      webViewController?.loadUrl(url: url, id: id)
+      let res = ensureWebView(id:id)
+      if (res) {
+        webViewController?.loadUrl(url: url, id: id)
+      } else {
+        webViewController?.loadUrl(url: url, id: id)
+        print("FlutterDesktopCefWebPlugin handle " + call.method + ", fail")
+      }
     case "executeJs":
 
       let argv:[String:Any] = call.arguments as! [String: Any]
       let url = getString(argva:argv, key:"content");
       let id = getInt(argva: argv, key: "id")
-      ensureWebView(id:id)
-      webViewController?.showWebView(id: id)
-      webViewController?.executeJs(jscode: url, id: id)
+      let res = ensureWebView(id:id)
+      if (res) {
+        webViewController?.showWebView(id: id)
+        webViewController?.executeJs(jscode: url, id: id)
+      } else {
+        print("FlutterDesktopCefWebPlugin handle " + call.method + ", fail")
+      }
     case "hide" :
       let argv:[String:Any] = call.arguments as! [String: Any]
       let id = getInt(argva: argv, key: "id")
